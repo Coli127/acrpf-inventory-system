@@ -7,7 +7,7 @@ import { Toaster } from "@/components/ui/sonner";
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: "InvenPro — Advanced Inventory Management",
+  title: "ACRPF — Advanced Clay Reef Production",
   description: "Enterprise-grade inventory management system with real-time tracking, analytics, and automation.",
 };
 

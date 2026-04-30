@@ -148,7 +148,7 @@ export default function SettingsPage() {
               <span className="text-white font-bold">I</span>
             </div>
             <div>
-              <p className="font-semibold">InvenPro</p>
+              <p className="font-semibold">ACRPF</p>
               <p className="text-xs text-muted-foreground">Advanced Inventory Management System v1.0</p>
             </div>
           </div>

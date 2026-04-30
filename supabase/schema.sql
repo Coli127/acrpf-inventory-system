@@ -218,3 +218,80 @@ CREATE INDEX idx_purchase_orders_supplier ON purchase_orders(supplier_id);
 CREATE INDEX idx_purchase_orders_status ON purchase_orders(status);
 CREATE INDEX idx_activity_log_entity ON activity_log(entity_type, entity_id);
 CREATE INDEX idx_notifications_user ON notifications(user_id, read);
+
+-- =======================================
+-- BRICKS INVENTORY
+-- =======================================
+CREATE TABLE bricks_inventory (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  date TEXT NOT NULL,
+  year INTEGER,
+  newly_printed INTEGER,
+  bricks_in_kiln INTEGER,
+  reclaimed_newly_printed INTEGER,
+  reclaimed_air_dried INTEGER,
+  deployed_delivered INTEGER,
+  bricks_with_cracks INTEGER,
+  total_air_dried INTEGER,
+  actual_count INTEGER,
+  total_fired INTEGER,
+  overall_total INTEGER,
+  remarks TEXT,
+  deficit INTEGER,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE bricks_inventory ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Authenticated users can manage bricks" ON bricks_inventory FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- =======================================
+-- DAILY JOURNAL
+-- =======================================
+CREATE TABLE journal_entries (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  date TEXT NOT NULL,
+  available_taguibo_clay_bags INTEGER,
+  available_calapagan_clay_kg INTEGER,
+  available_fine_sand_kg INTEGER,
+  soaked_clay_for_day_kg INTEGER,
+  total_soaked_clay_mixture_kg INTEGER,
+  prepared_rtp_mix_for_day_kg INTEGER,
+  reclaimed_rtp_mix_kg INTEGER,
+  total_available_remaining_rtp_mix_kg INTEGER,
+  used_rtp_mix_kg INTEGER,
+  total_remaining_rtp_mix_kg INTEGER,
+  target_soaked_clay_mixture_kg INTEGER,
+  target_prepared_clay_mixture_kg INTEGER,
+  printed_3d_clay_units INTEGER,
+  mixed_kg INTEGER,
+  prepared_kg INTEGER,
+  remarks TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE journal_entries ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Authenticated users can manage journal" ON journal_entries FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- =======================================
+-- SCHEDULES
+-- =======================================
+CREATE TABLE schedules (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  task TEXT NOT NULL,
+  monday TEXT,
+  tuesday TEXT,
+  wednesday TEXT,
+  thursday TEXT,
+  friday TEXT,
+  target TEXT,
+  remarks TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE schedules ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Authenticated users can manage schedules" ON schedules FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+CREATE INDEX idx_bricks_date ON bricks_inventory(date);
+CREATE INDEX idx_bricks_year ON bricks_inventory(year);
+CREATE INDEX idx_journal_date ON journal_entries(date);
+CREATE INDEX idx_schedules_task ON schedules(task);

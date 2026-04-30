@@ -14,14 +14,14 @@ export default function AuthLayout({
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 mb-2">
             <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-chart-3 flex items-center justify-center">
-              <span className="text-white font-bold text-lg">I</span>
+              <span className="text-white font-bold text-lg">A</span>
             </div>
             <h1 className="text-2xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-              InvenPro
+              ACRPF
             </h1>
           </div>
           <p className="text-sm text-muted-foreground">
-            Advanced Inventory Management System
+            Advanced Clay Reef Production Facility
           </p>
         </div>
         {children}

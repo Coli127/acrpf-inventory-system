@@ -84,71 +84,26 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
-        // Fetch products stats
-        const { data: products } = await supabase.from("products").select("*");
-        if (products) {
-          const totalProducts = products.length;
-          const lowStockCount = products.filter(
-            (p) => p.quantity <= p.min_stock_level && p.status === "active"
-          ).length;
-          const totalValue = products.reduce(
-            (sum, p) => sum + p.quantity * p.unit_price,
-            0
-          );
-          setStats((prev) => ({ ...prev, totalProducts, lowStockCount, totalValue }));
+        // Fetch Bricks stats
+        const { data: bricks } = await supabase.from("bricks_inventory").select("*");
+        if (bricks) {
+          const totalBricks = bricks.reduce((sum, b) => sum + (b.overall_total || 0), 0);
+          const bricks2025 = bricks.filter((b) => b.year === 2025).length;
+          const bricks2026 = bricks.filter((b) => b.year === 2026).length;
+          setStats((prev) => ({ ...prev, totalProducts: bricks.length, lowStockCount: bricks2025, totalValue: totalBricks, pendingOrders: bricks2026 }));
         }
 
-        // Fetch pending orders
-        const { count: pendingOrders } = await supabase
-          .from("purchase_orders")
-          .select("*", { count: "exact", head: true })
-          .in("status", ["draft", "pending"]);
-        setStats((prev) => ({ ...prev, pendingOrders: pendingOrders || 0 }));
-
-        // Fetch category distribution
-        const { data: cats } = await supabase
-          .from("products")
-          .select("category:categories(name)");
-        if (cats) {
-          const catCounts: Record<string, number> = {};
-          cats.forEach((p: any) => {
-            const name = p.category?.name || "Uncategorized";
-            catCounts[name] = (catCounts[name] || 0) + 1;
-          });
-          setCategoryData(
-            Object.entries(catCounts).map(([name, count]) => ({ name, count }))
-          );
+        // Fetch Journal stats
+        const { data: journal } = await supabase.from("journal_entries").select("*");
+        if (journal) {
+          setRecentActivity(journal.slice(0, 5).map((j: any) => ({
+            id: j.id,
+            action: "Journal Entry",
+            entity_type: "journal",
+            details: j.date,
+            created_at: "2026-01-01T00:00:00Z",
+          })));
         }
-
-        // Fetch recent movements for chart
-        const { data: movements } = await supabase
-          .from("stock_movements")
-          .select("*")
-          .order("created_at", { ascending: true })
-          .limit(100);
-        if (movements && movements.length > 0) {
-          const grouped: Record<string, { inbound: number; outbound: number }> = {};
-          movements.forEach((m) => {
-            const date = new Date(m.created_at).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-            });
-            if (!grouped[date]) grouped[date] = { inbound: 0, outbound: 0 };
-            if (m.type === "inbound") grouped[date].inbound += m.quantity;
-            if (m.type === "outbound") grouped[date].outbound += m.quantity;
-          });
-          setMovementData(
-            Object.entries(grouped).map(([date, data]) => ({ date, ...data }))
-          );
-        }
-
-        // Fetch recent activity
-        const { data: activity } = await supabase
-          .from("activity_log")
-          .select("*")
-          .order("created_at", { ascending: false })
-          .limit(5);
-        if (activity) setRecentActivity(activity);
       } catch (error) {
         console.error("Dashboard fetch error:", error);
       } finally {
@@ -159,23 +114,19 @@ export default function DashboardPage() {
     fetchDashboard();
   }, [supabase]);
 
-  // Demo data for charts when database is empty
-  const demoMovementData = movementData.length > 0 ? movementData : [
+  // Demo data for charts
+  const demoMovementData = [
     { date: "Mon", inbound: 24, outbound: 18 },
     { date: "Tue", inbound: 13, outbound: 22 },
     { date: "Wed", inbound: 38, outbound: 12 },
     { date: "Thu", inbound: 20, outbound: 29 },
     { date: "Fri", inbound: 45, outbound: 15 },
-    { date: "Sat", inbound: 32, outbound: 8 },
-    { date: "Sun", inbound: 10, outbound: 5 },
   ];
 
-  const demoCategoryData = categoryData.length > 0 ? categoryData : [
-    { name: "Electronics", count: 42 },
-    { name: "Furniture", count: 28 },
-    { name: "Clothing", count: 35 },
-    { name: "Food", count: 21 },
-    { name: "Other", count: 14 },
+  const demoCategoryData = [
+    { name: "Bricks 2025", count: 84 },
+    { name: "Bricks 2026", count: 78 },
+    { name: "Journal", count: 54 },
   ];
 
   const demoStockTrend = [
@@ -356,16 +307,16 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {(recentActivity.length > 0
-                ? recentActivity
-                : [
-                    { id: "1", action: "Product Created", entity_type: "product", details: "Added 'Wireless Mouse'", created_at: new Date(Date.now() - 1000 * 60 * 5).toISOString() },
-                    { id: "2", action: "Stock Inbound", entity_type: "stock", details: "+50 units of Keyboard", created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString() },
-                    { id: "3", action: "Order Created", entity_type: "order", details: "PO-2024-001 submitted", created_at: new Date(Date.now() - 1000 * 60 * 60).toISOString() },
-                    { id: "4", action: "Low Stock Alert", entity_type: "alert", details: "USB Cable below minimum", created_at: new Date(Date.now() - 1000 * 60 * 120).toISOString() },
-                    { id: "5", action: "Category Updated", entity_type: "category", details: "Renamed to Electronics", created_at: new Date(Date.now() - 1000 * 60 * 180).toISOString() },
-                  ]
-              ).map((item) => (
+{(recentActivity.length > 0
+              ? recentActivity
+              : [
+                  { id: "1", action: "Data Imported", entity_type: "journal", details: "Bricks 2025 loaded", created_at: "2026-01-01T00:00:00Z" },
+                  { id: "2", action: "Data Imported", entity_type: "journal", details: "Bricks 2026 loaded", created_at: "2026-01-01T00:00:00Z" },
+                  { id: "3", action: "Data Imported", entity_type: "journal", details: "Journal entries loaded", created_at: "2026-01-01T00:00:00Z" },
+                  { id: "4", action: "Data Imported", entity_type: "journal", details: "Schedule loaded", created_at: "2026-01-01T00:00:00Z" },
+                  { id: "5", action: "System Ready", entity_type: "journal", details: "ACRPF System", created_at: "2026-01-01T00:00:00Z" },
+                ]
+            ).map((item) => (
                 <div
                   key={item.id}
                   className="flex items-start gap-3 p-3 rounded-lg hover:bg-accent/50 transition-colors"
@@ -384,10 +335,7 @@ export default function DashboardPage() {
                     </p>
                   </div>
                   <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                    {new Date(item.created_at).toLocaleTimeString("en-US", {
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })}
+                    --
                   </span>
                 </div>
               ))}

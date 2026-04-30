@@ -65,9 +65,9 @@ export default function RegisterPage() {
   return (
     <Card className="border-border/50 bg-card/80 backdrop-blur-sm shadow-2xl">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold">Create account</CardTitle>
+        <CardTitle className="text-2xl font-bold">Register ACRPF</CardTitle>
         <CardDescription>
-          Get started with your inventory management
+          Create your account for the facility
         </CardDescription>
       </CardHeader>
       <form onSubmit={handleRegister}>

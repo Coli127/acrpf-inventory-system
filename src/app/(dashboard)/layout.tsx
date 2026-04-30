@@ -18,31 +18,24 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import {
   LayoutDashboard,
   Package,
-  Tags,
-  Users,
-  Warehouse,
-  ArrowLeftRight,
-  ShoppingCart,
-  BarChart3,
-  Activity,
   Settings,
   LogOut,
   ChevronLeft,
   Menu,
-  Bell,
+  Upload,
+  Grid3X3,
+  BookOpen,
+  CalendarCheck,
 } from "lucide-react";
 import type { Profile, Notification } from "@/lib/types";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
+  { name: "Import Excel", href: "/import-excel", icon: Upload },
   { name: "Products", href: "/products", icon: Package },
-  { name: "Categories", href: "/categories", icon: Tags },
-  { name: "Suppliers", href: "/suppliers", icon: Users },
-  { name: "Warehouses", href: "/warehouses", icon: Warehouse },
-  { name: "Stock Movements", href: "/stock-movements", icon: ArrowLeftRight },
-  { name: "Purchase Orders", href: "/purchase-orders", icon: ShoppingCart },
-  { name: "Reports", href: "/reports", icon: BarChart3 },
-  { name: "Activity Log", href: "/activity-log", icon: Activity },
+  { name: "Bricks", href: "/bricks", icon: Grid3X3 },
+  { name: "Daily Journal", href: "/journal", icon: BookOpen },
+  { name: "Schedule", href: "/schedule", icon: CalendarCheck },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 
@@ -162,12 +155,12 @@ export default function DashboardLayout({
         collapsed && "justify-center px-2"
       )}
     >
-      <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-chart-3 flex items-center justify-center shrink-0">
-        <span className="text-white font-bold text-sm">I</span>
-      </div>
+<div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-chart-3 flex items-center justify-center shrink-0">
+          <span className="text-white font-bold text-sm">A</span>
+        </div>
       {!collapsed && (
         <span className="font-bold text-lg bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-          InvenPro
+          ACRPF
         </span>
       )}
     </div>
@@ -263,42 +256,6 @@ export default function DashboardLayout({
 
             <div className="flex items-center gap-2">
               <ThemeToggle />
-
-              <DropdownMenu>
-                <DropdownMenuTrigger className="relative h-9 w-9 rounded-lg inline-flex items-center justify-center hover:bg-accent">
-                  <Bell className="h-4 w-4" />
-                  {notifications.length > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-destructive text-[10px] font-bold text-white flex items-center justify-center">
-                      {notifications.length}
-                    </span>
-                  )}
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-80">
-                  <div className="px-3 py-2 font-semibold text-sm">
-                    Notifications
-                  </div>
-                  <DropdownMenuSeparator />
-                  {notifications.length === 0 ? (
-                    <div className="px-3 py-6 text-center text-sm text-muted-foreground">
-                      No new notifications
-                    </div>
-                  ) : (
-                    notifications.map((notif) => (
-                      <DropdownMenuItem
-                        key={notif.id}
-                        className="flex flex-col items-start gap-1 p-3"
-                      >
-                        <span className="font-medium text-sm">
-                          {notif.title}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {notif.message}
-                        </span>
-                      </DropdownMenuItem>
-                    ))
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
 
               <DropdownMenu>
                 <DropdownMenuTrigger className="gap-2 px-2 h-9 inline-flex items-center rounded-lg hover:bg-accent">
