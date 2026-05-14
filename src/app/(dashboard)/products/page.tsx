@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { Package, Plus, Search, MoreHorizontal, Pencil, Trash2, Loader2, AlertTriangle } from "lucide-react";
+import { Package, Plus, Search, MoreHorizontal, Pencil, Trash2, Loader2, AlertTriangle, ChevronDown, ChevronRight } from "lucide-react";
 import type { Product, Category, Supplier, Warehouse } from "@/lib/types";
 
 export default function ProductsPage() {
@@ -24,6 +24,7 @@ export default function ProductsPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState(true);
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
@@ -102,7 +103,7 @@ export default function ProductsPage() {
       setDialogOpen(false);
       resetForm();
       fetchData();
-    } catch (error: any) { toast.error(error.message || "Failed to save"); }
+    } catch (error: unknown) { toast.error(error instanceof Error ? error.message : "Failed to save"); }
     finally { setSaving(false); }
   };
 
@@ -147,7 +148,7 @@ export default function ProductsPage() {
       <Card><CardContent className="p-4">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search products by name, SKU, or barcode..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" /></div>
+            <Input placeholder="Search products by name, SKU, or barcode..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" /></div>
           <Select value={filterCategory} onValueChange={(v) => setFilterCategory(v ?? "all")}>
             <SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="Category" /></SelectTrigger>
             <SelectContent>
@@ -167,75 +168,153 @@ export default function ProductsPage() {
         </div>
       </CardContent></Card>
 
-      <Card><CardContent className="p-0"><Table><TableHeader><TableRow>
-        <TableHead>Product</TableHead><TableHead>SKU</TableHead><TableHead>Category</TableHead>
-        <TableHead className="text-right">Price</TableHead><TableHead className="text-right">Qty</TableHead>
-        <TableHead>Stock</TableHead><TableHead>Status</TableHead><TableHead className="w-[50px]"></TableHead>
-      </TableRow></TableHeader><TableBody>
-        {loading ? (
-          <TableRow><TableCell colSpan={8} className="text-center h-32"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
-        ) : filteredProducts.length === 0 ? (
-          <TableRow><TableCell colSpan={8} className="text-center h-32 text-muted-foreground">No products found</TableCell></TableRow>
-        ) : filteredProducts.map((product) => (
-          <TableRow key={product.id} className="cursor-pointer hover:bg-accent/50">
-            <TableCell>
-              <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-primary/10 to-chart-3/10 flex items-center justify-center"><Package className="h-4 w-4 text-primary" /></div>
-                <div><p className="font-medium text-sm">{product.name}</p>{product.supplier?.name && <p className="text-xs text-muted-foreground">{product.supplier.name}</p>}</div>
+      <Card>
+        <CardContent className="p-0">
+          <button
+            className="w-full px-6 py-4 flex items-center justify-between hover:bg-accent/50 transition-colors"
+            onClick={() => setExpanded(!expanded)}
+          >
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                <Package className="h-4 w-4 text-blue-500" />
               </div>
-            </TableCell>
-            <TableCell className="font-mono text-xs text-muted-foreground">{product.sku}</TableCell>
-            <TableCell className="text-sm">{product.category?.name || "—"}</TableCell>
-            <TableCell className="text-right text-sm font-medium">{formatCurrency(product.unit_price)}</TableCell>
-            <TableCell className="text-right text-sm">{product.quantity}</TableCell>
-            <TableCell>{getStockBadge(product)}</TableCell>
-            <TableCell>{getStatusBadge(product.status)}</TableCell>
-            <TableCell>
-              <DropdownMenu>
-                <DropdownMenuTrigger className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-accent"><MoreHorizontal className="h-4 w-4" /></DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => openEditDialog(product)}><Pencil className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
-                  <DropdownMenuItem variant="destructive" onClick={() => { setDeletingProduct(product); setDeleteDialogOpen(true); }}><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </TableCell>
-          </TableRow>
-        ))}</TableBody></Table></CardContent></Card>
+              <div className="text-left">
+                <h3 className="font-semibold">Product Inventory</h3>
+                <p className="text-sm text-muted-foreground">{filteredProducts.length} products</p>
+              </div>
+            </div>
+            {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          </button>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}><DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>{editingProduct ? "Edit Product" : "Add New Product"}</DialogTitle><DialogDescription>{editingProduct ? "Update product details" : "Fill in the product details"}</DialogDescription></DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2"><Label htmlFor="name">Product Name *</Label><Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Enter product name" /></div>
-            <div className="space-y-2"><Label htmlFor="sku">SKU *</Label><Input id="sku" value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} placeholder="Auto-generated" className="font-mono" /></div>
-          </div>
-          <div className="space-y-2"><Label htmlFor="description">Description</Label><Textarea id="description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Product description..." rows={2} /></div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2"><Label>Category</Label><Select value={form.category_id} onValueChange={(v) => setForm({ ...form, category_id: v ?? "" })}><SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger><SelectContent>{categories.map((cat) => (<SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>))}</SelectContent></Select></div>
-            <div className="space-y-2"><Label>Supplier</Label><Select value={form.supplier_id} onValueChange={(v) => setForm({ ...form, supplier_id: v ?? "" })}><SelectTrigger><SelectValue placeholder="Select supplier" /></SelectTrigger><SelectContent>{suppliers.map((s) => (<SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>))}</SelectContent></Select></div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2"><Label>Unit Price</Label><Input type="number" step="0.01" value={form.unit_price} onChange={(e) => setForm({ ...form, unit_price: e.target.value })} placeholder="0.00" /></div>
-            <div className="space-y-2"><Label>Cost Price</Label><Input type="number" step="0.01" value={form.cost_price} onChange={(e) => setForm({ ...form, cost_price: e.target.value })} placeholder="0.00" /></div>
-          </div>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2"><Label>Initial Quantity</Label><Input type="number" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} placeholder="0" /></div>
-            <div className="space-y-2"><Label>Min Stock Level</Label><Input type="number" value={form.min_stock_level} onChange={(e) => setForm({ ...form, min_stock_level: e.target.value })} placeholder="10" /></div>
-            <div className="space-y-2"><Label>Warehouse</Label><Select value={form.warehouse_id} onValueChange={(v) => setForm({ ...form, warehouse_id: v ?? "" })}><SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger><SelectContent>{warehouses.map((w) => (<SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>))}</SelectContent></Select></div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2"><Label>Barcode</Label><Input value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} placeholder="Scan or enter barcode" /></div>
-            <div className="space-y-2"><Label>Status</Label><Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v ?? "active" })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem><SelectItem value="discontinued">Discontinued</SelectItem></SelectContent></Select></div>
-          </div>
-        </div>
-        <DialogFooter><Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button><Button onClick={handleSave} disabled={saving}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{editingProduct ? "Update Product" : "Create Product"}</Button></DialogFooter>
-      </DialogContent></Dialog>
+          {expanded && (
+            <div className="border-t overflow-x-auto bg-white dark:bg-zinc-950">
+              <Table className="border-collapse">
+                <TableHeader>
+                  <TableRow className="bg-muted/50">
+                    <TableHead className="border border-border text-center font-bold sticky left-0 bg-muted/50 min-w-[200px]">Product</TableHead>
+                    <TableHead className="border border-border text-center font-bold min-w-[100px]">SKU</TableHead>
+                    <TableHead className="border border-border text-center font-bold min-w-[130px]">Category</TableHead>
+                    <TableHead className="border border-border text-center font-bold min-w-[100px]">Price</TableHead>
+                    <TableHead className="border border-border text-center font-bold min-w-[80px]">Cost</TableHead>
+                    <TableHead className="border border-border text-center font-bold min-w-[80px]">Qty</TableHead>
+                    <TableHead className="border border-border text-center font-bold min-w-[100px]">Min Stock</TableHead>
+                    <TableHead className="border border-border text-center font-bold min-w-[100px]">Stock</TableHead>
+                    <TableHead className="border border-border text-center font-bold min-w-[100px]">Status</TableHead>
+                    <TableHead className="border border-border text-center font-bold min-w-[130px]">Supplier</TableHead>
+                    <TableHead className="border border-border text-center font-bold sticky right-0 bg-muted/50 min-w-[100px]">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={11} className="text-center h-32 border border-border">
+                        <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+                      </TableCell>
+                    </TableRow>
+                  ) : filteredProducts.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={11} className="text-center h-32 text-muted-foreground border border-border">
+                        No products found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredProducts.map((product, index) => (
+                      <TableRow key={product.id} className={index % 2 === 0 ? "bg-background" : "bg-muted/30"}>
+                        <TableCell className="border border-border font-medium sticky left-0 bg-inherit">
+                          <div>
+                            <div className="font-medium">{product.name}</div>
+                            <div className="text-xs text-muted-foreground truncate max-w-[180px]">{product.description || "-"}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="border border-border">{product.sku}</TableCell>
+                        <TableCell className="border border-border">{product.category?.name || "-"}</TableCell>
+                        <TableCell className="border border-border text-right">{formatCurrency(product.unit_price)}</TableCell>
+                        <TableCell className="border border-border text-right">{formatCurrency(product.cost_price)}</TableCell>
+                        <TableCell className="border border-border text-right">{product.quantity}</TableCell>
+                        <TableCell className="border border-border text-right">{product.min_stock_level}</TableCell>
+                        <TableCell className="border border-border text-center">{getStockBadge(product)}</TableCell>
+                        <TableCell className="border border-border text-center">{getStatusBadge(product.status)}</TableCell>
+                        <TableCell className="border border-border">{product.supplier?.name || "-"}</TableCell>
+                        <TableCell className="border border-border sticky right-0 bg-inherit">
+                          <div className="flex gap-1 justify-center">
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditDialog(product)}>
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => { setDeletingProduct(product); setDeleteDialogOpen(true); }}>
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}><DialogContent>
-        <DialogHeader><DialogTitle className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-destructive" />Delete Product</DialogTitle>
-        <DialogDescription>Are you sure you want to delete &quot;{deletingProduct?.name}&quot;? This cannot be undone.</DialogDescription></DialogHeader>
-        <DialogFooter><Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>Cancel</Button><Button variant="destructive" onClick={handleDelete}>Delete</Button></DialogFooter>
-      </DialogContent></Dialog>
+      {/* Add/Edit Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>{editingProduct ? "Edit Product" : "Add New Product"}</DialogTitle>
+            <DialogDescription>{editingProduct ? "Update product details" : "Create a new product in inventory"}</DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-4 max-h-[60vh] overflow-y-auto">
+            <div className="space-y-2"><Label>Name *</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Product name" /></div>
+            <div className="space-y-2"><Label>SKU *</Label><Input value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} placeholder="Stock Keeping Unit" /></div>
+            <div className="space-y-2"><Label>Category</Label><Select value={form.category_id} onValueChange={(v) => setForm({ ...form, category_id: v ?? "" })}>
+              <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+              <SelectContent>{categories.map((cat) => (<SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>))}</SelectContent>
+            </Select></div>
+            <div className="space-y-2"><Label>Supplier</Label><Select value={form.supplier_id} onValueChange={(v) => setForm({ ...form, supplier_id: v ?? "" })}>
+              <SelectTrigger><SelectValue placeholder="Select supplier" /></SelectTrigger>
+              <SelectContent>{suppliers.map((sup) => (<SelectItem key={sup.id} value={sup.id}>{sup.name}</SelectItem>))}</SelectContent>
+            </Select></div>
+            <div className="space-y-2"><Label>Unit Price *</Label><Input type="number" step="0.01" value={form.unit_price} onChange={(e) => setForm({ ...form, unit_price: e.target.value })} placeholder="0.00" /></div>
+            <div className="space-y-2"><Label>Cost Price *</Label><Input type="number" step="0.01" value={form.cost_price} onChange={(e) => setForm({ ...form, cost_price: e.target.value })} placeholder="0.00" /></div>
+            <div className="space-y-2"><Label>Quantity *</Label><Input type="number" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} /></div>
+            <div className="space-y-2"><Label>Min Stock Level</Label><Input type="number" value={form.min_stock_level} onChange={(e) => setForm({ ...form, min_stock_level: e.target.value })} /></div>
+            <div className="space-y-2"><Label>Warehouse</Label><Select value={form.warehouse_id} onValueChange={(v) => setForm({ ...form, warehouse_id: v ?? "" })}>
+              <SelectTrigger><SelectValue placeholder="Select warehouse" /></SelectTrigger>
+              <SelectContent>{warehouses.map((w) => (<SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>))}</SelectContent>
+            </Select></div>
+            <div className="space-y-2"><Label>Barcode</Label><Input value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} placeholder="Barcode" /></div>
+            <div className="space-y-2"><Label>Status</Label><Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v ?? "active" })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+                <SelectItem value="discontinued">Discontinued</SelectItem>
+              </SelectContent>
+            </Select></div>
+            <div className="col-span-2 space-y-2"><Label>Description</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setDialogOpen(false); resetForm(); }}>Cancel</Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {editingProduct ? "Update" : "Create"} Product
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-destructive" />Delete Product</DialogTitle>
+            <DialogDescription>Delete &quot;{deletingProduct?.name}&quot;? This action cannot be undone.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setDeleteDialogOpen(false); setDeletingProduct(null); }}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDelete}>Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

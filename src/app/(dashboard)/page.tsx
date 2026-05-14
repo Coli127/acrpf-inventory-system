@@ -96,7 +96,7 @@ export default function DashboardPage() {
         // Fetch Journal stats
         const { data: journal } = await supabase.from("journal_entries").select("*");
         if (journal) {
-          setRecentActivity(journal.slice(0, 5).map((j: any) => ({
+          setRecentActivity(journal.slice(0, 5).map((j: { id: string; date: string }) => ({
             id: j.id,
             action: "Journal Entry",
             entity_type: "journal",

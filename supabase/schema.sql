@@ -139,17 +139,32 @@ CREATE OR REPLACE TRIGGER on_stock_movement
   FOR EACH ROW EXECUTE FUNCTION update_product_quantity();
 
 -- =======================================
+-- CUSTOMERS (buyers of bricks)
+-- =======================================
+CREATE TABLE customers (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL,
+  email TEXT,
+  phone TEXT,
+  address TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Authenticated users can manage customers" ON customers FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- =======================================
 -- PURCHASE ORDERS
 -- =======================================
 CREATE TABLE purchase_orders (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  supplier_id UUID NOT NULL REFERENCES suppliers(id),
+  customer_id UUID NOT NULL REFERENCES customers(id),
   status TEXT DEFAULT 'draft' CHECK (status IN ('draft', 'pending', 'approved', 'received', 'cancelled')),
   total_amount NUMERIC(12,2) DEFAULT 0,
   notes TEXT,
   created_by UUID REFERENCES auth.users(id),
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 ALTER TABLE purchase_orders ENABLE ROW LEVEL SECURITY;

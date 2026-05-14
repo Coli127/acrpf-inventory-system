@@ -17,25 +17,27 @@ import {
 import { ThemeToggle } from "@/components/theme-toggle";
 import {
   LayoutDashboard,
-  Package,
   Settings,
   LogOut,
   ChevronLeft,
   Menu,
-  Upload,
   Grid3X3,
   BookOpen,
   CalendarCheck,
+  ShoppingCart,
+  Users,
+  Calendar,
 } from "lucide-react";
 import type { Profile, Notification } from "@/lib/types";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
-  { name: "Import Excel", href: "/import-excel", icon: Upload },
-  { name: "Products", href: "/products", icon: Package },
+  { name: "Purchases", href: "/purchase-orders", icon: ShoppingCart },
   { name: "Bricks", href: "/bricks", icon: Grid3X3 },
   { name: "Daily Journal", href: "/journal", icon: BookOpen },
   { name: "Schedule", href: "/schedule", icon: CalendarCheck },
+  { name: "Import Schedule", href: "/import-schedule", icon: Calendar },
+  { name: "Users", href: "/users", icon: Users },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 
@@ -90,21 +92,14 @@ export default function DashboardLayout({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [dateString, setDateString] = useState("");
+  const [dateString] = useState(() =>
+    typeof window !== "undefined"
+      ? new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
+      : ""
+  );
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
-
-  useEffect(() => {
-    setDateString(
-      new Date().toLocaleDateString("en-US", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
-    );
-  }, []);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -238,21 +233,21 @@ export default function DashboardLayout({
       >
         <header className="sticky top-0 z-20 h-16 border-b border-border/50 bg-background/80 backdrop-blur-md">
           <div className="flex items-center justify-between h-full px-4 lg:px-6">
-            <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="lg:hidden"
-                onClick={() => setMobileOpen(true)}
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
-              <div className="hidden sm:block">
-                <h2 className="text-sm font-medium text-muted-foreground">
-                  {dateString}
-                </h2>
-              </div>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden"
+              onClick={() => setMobileOpen(true)}
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+            <div className="hidden sm:block">
+              <h2 className="text-sm font-medium text-muted-foreground">
+                {dateString}
+              </h2>
             </div>
+          </div>
 
             <div className="flex items-center gap-2">
               <ThemeToggle />

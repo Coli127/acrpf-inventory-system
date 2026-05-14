@@ -76,7 +76,7 @@ export default function StockMovementsPage() {
       setDialogOpen(false);
       setForm({ product_id: "", type: "inbound", quantity: "", reference: "", notes: "" });
       fetchData();
-    } catch (error: any) { toast.error(error.message); } finally { setSaving(false); }
+    } catch (error: unknown) { toast.error(error instanceof Error ? error.message : "An unexpected error occurred"); } finally { setSaving(false); }
   };
 
   const getTypeBadge = (type: string) => {

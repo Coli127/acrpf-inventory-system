@@ -52,7 +52,7 @@ export default function SuppliersPage() {
         toast.success("Supplier created");
       }
       setDialogOpen(false); setForm({ name: "", email: "", phone: "", address: "" }); setEditing(null); fetchData();
-    } catch (error: any) { toast.error(error.message); } finally { setSaving(false); }
+    } catch (error: unknown) { toast.error(error instanceof Error ? error.message : "An unexpected error occurred"); } finally { setSaving(false); }
   };
 
   const handleDelete = async () => {
@@ -66,11 +66,11 @@ export default function SuppliersPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Suppliers" description={`${suppliers.length} suppliers`} icon={Users}>
+      <PageHeader title="Customers" description={`${suppliers.length} customers`} icon={Users}>
         <Button onClick={() => { setEditing(null); setForm({ name: "", email: "", phone: "", address: "" }); setDialogOpen(true); }} className="gap-2"><Plus className="h-4 w-4" /> Add Supplier</Button>
       </PageHeader>
 
-      <Card><CardContent className="p-4"><div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Search suppliers..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 max-w-sm" /></div></CardContent></Card>
+      <Card><CardContent className="p-4"><div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Search customers..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 max-w-sm" /></div></CardContent></Card>
 
       <Card><CardContent className="p-0"><Table><TableHeader><TableRow>
         <TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Phone</TableHead><TableHead>Address</TableHead><TableHead>Created</TableHead><TableHead className="w-[50px]"></TableHead>
@@ -78,7 +78,7 @@ export default function SuppliersPage() {
         {loading ? (
           <TableRow><TableCell colSpan={6} className="text-center h-32"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
         ) : filtered.length === 0 ? (
-          <TableRow><TableCell colSpan={6} className="text-center h-32 text-muted-foreground">No suppliers found</TableCell></TableRow>
+          <TableRow><TableCell colSpan={6} className="text-center h-32 text-muted-foreground">No customers found</TableCell></TableRow>
         ) : filtered.map((s) => (
           <TableRow key={s.id}>
             <TableCell><div className="flex items-center gap-3"><div className="h-9 w-9 rounded-lg bg-gradient-to-br from-primary/10 to-chart-3/10 flex items-center justify-center"><Users className="h-4 w-4 text-primary" /></div><span className="font-medium">{s.name}</span></div></TableCell>

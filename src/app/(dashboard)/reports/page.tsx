@@ -74,12 +74,12 @@ export default function ReportsPage() {
     .map(([name, value]) => ({ name, value }))
     .sort((a, b) => b.value - a.value);
 
-  const exportToCSV = (data: any[], filename: string) => {
+  const exportToCSV = (data: Record<string, unknown>[], filename: string) => {
     if (data.length === 0) return;
     const headers = Object.keys(data[0]);
     const csvContent = [
       headers.join(","),
-      ...data.map((row) => headers.map((h) => `"${row[h] ?? ""}"`).join(",")),
+      ...data.map((row) => headers.map((h) => `"${String(row[h] ?? "")}"`).join(",")),
     ].join("\n");
     const blob = new Blob([csvContent], { type: "text/csv" });
     const url = URL.createObjectURL(blob);

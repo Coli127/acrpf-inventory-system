@@ -52,7 +52,7 @@ export default function WarehousesPage() {
         toast.success("Warehouse created");
       }
       setDialogOpen(false); setForm({ name: "", address: "" }); setEditing(null); fetchData();
-    } catch (error: any) { toast.error(error.message); } finally { setSaving(false); }
+    } catch (error: unknown) { toast.error(error instanceof Error ? error.message : "An unexpected error occurred"); } finally { setSaving(false); }
   };
 
   const handleDelete = async () => {

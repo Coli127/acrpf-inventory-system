@@ -31,6 +31,7 @@ export default function ActivityLogPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterEntity, setFilterEntity] = useState<string>("all");
+  const [demoBaseTime] = useState(() => Date.now());
   const supabase = createClient();
 
   useEffect(() => {
@@ -49,14 +50,14 @@ export default function ActivityLogPage() {
   });
 
   const demoActivities: ActivityLog[] = [
-    { id: "1", user_id: null, action: "created", entity_type: "product", entity_id: null, details: "Added new product 'Wireless Keyboard'", created_at: new Date(Date.now() - 1000 * 60 * 5).toISOString() },
-    { id: "2", user_id: null, action: "updated", entity_type: "product", entity_id: null, details: "Updated stock for 'USB-C Cable'", created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString() },
-    { id: "3", user_id: null, action: "created", entity_type: "purchase_order", entity_id: null, details: "Created PO-2024-001 for TechSupply Co.", created_at: new Date(Date.now() - 1000 * 60 * 60).toISOString() },
-    { id: "4", user_id: null, action: "created", entity_type: "stock_movement", entity_id: null, details: "Inbound: +50 units of Monitor Stand", created_at: new Date(Date.now() - 1000 * 60 * 120).toISOString() },
-    { id: "5", user_id: null, action: "updated", entity_type: "category", entity_id: null, details: "Renamed category to 'Electronics'", created_at: new Date(Date.now() - 1000 * 60 * 180).toISOString() },
-    { id: "6", user_id: null, action: "deleted", entity_type: "supplier", entity_id: null, details: "Removed inactive supplier 'OldParts Inc.'", created_at: new Date(Date.now() - 1000 * 60 * 240).toISOString() },
-    { id: "7", user_id: null, action: "created", entity_type: "warehouse", entity_id: null, details: "Added new warehouse 'Branch 2'", created_at: new Date(Date.now() - 1000 * 60 * 300).toISOString() },
-    { id: "8", user_id: null, action: "created", entity_type: "stock_movement", entity_id: null, details: "Outbound: -20 units of Laptop Stand", created_at: new Date(Date.now() - 1000 * 60 * 360).toISOString() },
+    { id: "1", user_id: null, action: "created", entity_type: "product", entity_id: null, details: "Added new product 'Wireless Keyboard'", created_at: new Date(demoBaseTime - 1000 * 60 * 5).toISOString() },
+    { id: "2", user_id: null, action: "updated", entity_type: "product", entity_id: null, details: "Updated stock for 'USB-C Cable'", created_at: new Date(demoBaseTime - 1000 * 60 * 30).toISOString() },
+    { id: "3", user_id: null, action: "created", entity_type: "purchase_order", entity_id: null, details: "Created PO-2024-001 for TechSupply Co.", created_at: new Date(demoBaseTime - 1000 * 60 * 60).toISOString() },
+    { id: "4", user_id: null, action: "created", entity_type: "stock_movement", entity_id: null, details: "Inbound: +50 units of Monitor Stand", created_at: new Date(demoBaseTime - 1000 * 60 * 120).toISOString() },
+    { id: "5", user_id: null, action: "updated", entity_type: "category", entity_id: null, details: "Renamed category to 'Electronics'", created_at: new Date(demoBaseTime - 1000 * 60 * 180).toISOString() },
+    { id: "6", user_id: null, action: "deleted", entity_type: "supplier", entity_id: null, details: "Removed inactive supplier 'OldParts Inc.'", created_at: new Date(demoBaseTime - 1000 * 60 * 240).toISOString() },
+    { id: "7", user_id: null, action: "created", entity_type: "warehouse", entity_id: null, details: "Added new warehouse 'Branch 2'", created_at: new Date(demoBaseTime - 1000 * 60 * 300).toISOString() },
+    { id: "8", user_id: null, action: "created", entity_type: "stock_movement", entity_id: null, details: "Outbound: -20 units of Laptop Stand", created_at: new Date(demoBaseTime - 1000 * 60 * 360).toISOString() },
   ];
 
   const displayActivities = filtered.length > 0 ? filtered : demoActivities;
