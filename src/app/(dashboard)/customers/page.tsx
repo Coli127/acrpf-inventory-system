@@ -135,16 +135,15 @@ export default function CustomersPage() {
               <TableHead>Email</TableHead>
               <TableHead>Phone</TableHead>
               <TableHead>Address</TableHead>
-              <TableHead className="text-center">Orders</TableHead>
               <TableHead>Created</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={9} className="text-center h-32"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center h-32"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
             ) : filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={9} className="text-center h-32 text-muted-foreground">No customers found</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center h-32 text-muted-foreground">No customers found</TableCell></TableRow>
             ) : filtered.map((c) => (
               <Fragment key={c.id}>
                 <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => toggleOrders(c)}>
@@ -153,11 +152,6 @@ export default function CustomersPage() {
                   <TableCell className="text-sm">{c.email ? (<span className="flex items-center gap-1.5"><Mail className="h-3 w-3 text-muted-foreground" />{c.email}</span>) : "—"}</TableCell>
                   <TableCell className="text-sm">{c.phone ? (<span className="flex items-center gap-1.5"><Phone className="h-3 w-3 text-muted-foreground" />{c.phone}</span>) : "—"}</TableCell>
                   <TableCell className="text-sm text-muted-foreground max-w-[150px] truncate">{c.address || "—"}</TableCell>
-                  <TableCell className="text-center">
-                    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-semibold text-sm">
-                      {expandedCustomer === c.id && customerOrders.length > 0 ? customerOrders.length : "0"}
-                    </span>
-                  </TableCell>
                   <TableCell className="text-sm text-muted-foreground">{formatDate(c.created_at)}</TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -172,7 +166,7 @@ export default function CustomersPage() {
                 </TableRow>
                 {expandedCustomer === c.id && (
                   <TableRow>
-                    <TableCell colSpan={9} className="p-0 bg-muted/20">
+                    <TableCell colSpan={8} className="p-0 bg-muted/20">
                       <div className="p-4">
                         {ordersLoading ? (
                           <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
