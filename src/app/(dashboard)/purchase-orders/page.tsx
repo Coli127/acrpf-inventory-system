@@ -65,13 +65,13 @@ export default function SalesOrdersPage() {
   const [saving, setSaving] = useState(false);
   const [editingOrder, setEditingOrder] = useState<OrderRow | null>(null);
 
-  const [form, setForm] = useState({ customer_id: "", quantity: "1", notes: "" });
+  const [form, setForm] = useState({ customer_id: "", quantity: "1", price: "0", notes: "" });
   const [productData, setProductData] = useState<ProductData | null>(null);
   const [productLoading, setProductLoading] = useState(true);
 
   const supabase = createClient();
 
-  const total = productData ? productData.unit_price * parseInt(form.quantity || "0") : 0;
+  const total = parseFloat(form.price || "0") * parseInt(form.quantity || "0");
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -96,8 +96,10 @@ export default function SalesOrdersPage() {
     setProductLoading(true);
     try {
       const res = await fetch("/api/products/bricks");
-      const data = await res.json();
-      if (data.id) { setProductData(data); setProducts([data]); }
+      if (res.ok) {
+        const data = await res.json();
+        if (data.id) { setProductData(data); setProducts([data]); }
+      }
     } catch (error) { console.error("Product fetch error:", error); }
     finally { setProductLoading(false); }
   }, []);
@@ -107,6 +109,7 @@ export default function SalesOrdersPage() {
   const handleSave = async () => {
     if (!form.customer_id) { toast.error("Customer is required"); return; }
     if (!form.quantity || parseInt(form.quantity) < 1) { toast.error("Valid quantity is required"); return; }
+    if (!form.price || parseFloat(form.price) < 0) { toast.error("Valid price is required"); return; }
 
     setSaving(true);
     try {
@@ -118,7 +121,7 @@ export default function SalesOrdersPage() {
           product: "Bricks",
           product_id: productData?.id,
           quantity: parseInt(form.quantity),
-          price: productData?.unit_price,
+          price: parseFloat(form.price),
           total,
           notes: form.notes,
         }),
@@ -129,7 +132,7 @@ export default function SalesOrdersPage() {
 
       toast.success("Sales order created!");
       setDialogOpen(false);
-      setForm({ customer_id: "", quantity: "1", notes: "" });
+      setForm({ customer_id: "", quantity: "1", price: "0", notes: "" });
       fetchData();
     } catch (error: unknown) { toast.error(error instanceof Error ? error.message : "An unexpected error occurred"); }
     finally { setSaving(false); }
@@ -187,7 +190,7 @@ export default function SalesOrdersPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Sales Orders" description={`${orders.length} total orders`} icon={ShoppingCart}>
-        <Button onClick={() => { setForm({ customer_id: "", quantity: "1", notes: "" }); setDialogOpen(true); }} className="gap-2">
+        <Button onClick={() => { setForm({ customer_id: "", quantity: "1", price: "0", notes: "" }); setDialogOpen(true); }} className="gap-2">
           <Plus className="h-4 w-4" />Create Order
         </Button>
       </PageHeader>
@@ -301,14 +304,14 @@ export default function SalesOrdersPage() {
             <div className="space-y-2"><Label>Product</Label><Input value="Bricks" disabled className="bg-muted" /></div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2"><Label>Quantity</Label><Input type="number" min="1" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} /></div>
-              <div className="space-y-2"><Label>Price (each)</Label><Input value={productLoading ? "Loading..." : formatCurrency(productData?.unit_price || 0)} disabled className="bg-muted" /></div>
+              <div className="space-y-2"><Label>Price (each)</Label><Input type="number" min="0" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="₱0.00" /></div>
             </div>
             <div className="flex justify-between items-center pt-2 border-t font-bold"><span>Total:</span><span>{formatCurrency(total)}</span></div>
             <div className="space-y-2"><Label>Notes</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Order notes" rows={2} /></div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSave} disabled={saving || !form.customer_id}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Create Order</Button>
+            <Button onClick={handleSave} disabled={saving || !form.customer_id || !form.price || parseFloat(form.price) <= 0}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Create Order</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
