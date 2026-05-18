@@ -1,24 +1,27 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatDate } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, FileText, Clock, CheckCircle, XCircle, ShoppingCart, Users } from "lucide-react";
+import { Loader2, FileText, Clock, CheckCircle, XCircle, Users } from "lucide-react";
 
 export default function CustomersPage() {
+  const [customers, setCustomers] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/orders");
-      if (res.ok) {
-        setOrders(await res.json());
-      }
+      const [cRes, oRes] = await Promise.all([
+        fetch("/api/customers"),
+        fetch("/api/orders"),
+      ]);
+      if (cRes.ok) setCustomers(await cRes.json());
+      if (oRes.ok) setOrders(await oRes.json());
     } catch (error) {
       console.error("Fetch error:", error);
     }
@@ -41,36 +44,59 @@ export default function CustomersPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Customers" description={`${orders.length} entries`} icon={Users} />
+      <PageHeader title="Customers" description={`${customers.length} customers — ${orders.length} orders`} icon={Users} />
 
-      <Card><CardContent className="p-0">
-        <div className="overflow-x-auto bg-white dark:bg-zinc-950">
-          <Table className="border-collapse">
+      {/* Customer List */}
+      <Card>
+        <CardHeader><CardTitle className="text-base">Customer List</CardTitle></CardHeader>
+        <CardContent className="p-0">
+          <Table>
             <TableHeader>
               <TableRow className="bg-muted/50">
-                <TableHead className="border border-border text-center font-bold">Order ID</TableHead>
-                <TableHead className="border border-border text-center font-bold min-w-[180px]">Customer</TableHead>
-                <TableHead className="border border-border text-center font-bold min-w-[120px]">Status</TableHead>
-                <TableHead className="border border-border text-center font-bold min-w-[120px]">Total</TableHead>
-                <TableHead className="border border-border text-center font-bold min-w-[180px]">Created</TableHead>
+                <TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Phone</TableHead><TableHead>Address</TableHead><TableHead>Created</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center h-32 border border-border">
-                    <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
-                  </TableCell>
+                <TableRow><TableCell colSpan={5} className="text-center h-16"><Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
+              ) : customers.length === 0 ? (
+                <TableRow><TableCell colSpan={5} className="text-center h-16 text-muted-foreground">No customers</TableCell></TableRow>
+              ) : customers.map((c) => (
+                <TableRow key={c.id}>
+                  <TableCell className="font-medium">{c.name}</TableCell>
+                  <TableCell className="text-sm">{c.email || "—"}</TableCell>
+                  <TableCell className="text-sm">{c.phone || "—"}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{c.address || "—"}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{formatDate(c.created_at)}</TableCell>
                 </TableRow>
-              ) : orders.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center h-32 text-muted-foreground border border-border">
-                    No orders found
-                  </TableCell>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Orders Table */}
+      <Card>
+        <CardHeader><CardTitle className="text-base">Orders per Customer</CardTitle></CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table className="border-collapse">
+              <TableHeader>
+                <TableRow className="bg-muted/50">
+                  <TableHead className="border border-border text-center font-bold">Order ID</TableHead>
+                  <TableHead className="border border-border text-center font-bold min-w-[150px]">Customer</TableHead>
+                  <TableHead className="border border-border text-center font-bold">Status</TableHead>
+                  <TableHead className="border border-border text-center font-bold">Total</TableHead>
+                  <TableHead className="border border-border text-center font-bold min-w-[170px]">Created</TableHead>
                 </TableRow>
-              ) : (
-                orders.map((o, index) => (
-                  <TableRow key={o.id} className={index % 2 === 0 ? "bg-background" : "bg-muted/30"}>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow><TableCell colSpan={5} className="text-center h-16 border border-border"><Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
+                ) : orders.length === 0 ? (
+                  <TableRow><TableCell colSpan={5} className="text-center h-16 text-muted-foreground border border-border">No orders</TableCell></TableRow>
+                ) : orders.map((o, i) => (
+                  <TableRow key={o.id} className={i % 2 === 0 ? "bg-background" : "bg-muted/30"}>
                     <TableCell className="border border-border font-mono text-xs">{o.id.slice(0, 8).toUpperCase()}</TableCell>
                     <TableCell className="border border-border font-medium">{o.customer?.name ?? "—"}</TableCell>
                     <TableCell className="border border-border text-center">{getStatusBadge(o.status)}</TableCell>
@@ -79,12 +105,12 @@ export default function CustomersPage() {
                       {new Date(o.created_at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent></Card>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
