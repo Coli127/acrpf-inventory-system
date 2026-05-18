@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { formatCurrency } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -13,9 +12,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { ShoppingCart, Plus, Search, MoreHorizontal, Loader2, Eye, CheckCircle, XCircle, Clock, FileText, ChevronDown, ChevronRight, Trash2, Pencil } from "lucide-react";
+import { ShoppingCart, Plus, Search, MoreHorizontal, Loader2, Eye, CheckCircle, XCircle, Clock, FileText, Trash2 } from "lucide-react";
 
 interface OrderRow {
   id: string;
@@ -45,17 +44,9 @@ interface CustomerOption {
   phone?: string;
 }
 
-interface ProductData {
-  id: string;
-  name: string;
-  sku: string;
-  unit_price: number;
-}
-
 export default function SalesOrdersPage() {
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [customers, setCustomers] = useState<CustomerOption[]>([]);
-  const [products, setProducts] = useState<ProductData[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
@@ -63,51 +54,52 @@ export default function SalesOrdersPage() {
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OrderRow & { items?: OrderItemRow[] } | null>(null);
   const [saving, setSaving] = useState(false);
-  const [editingOrder, setEditingOrder] = useState<OrderRow | null>(null);
 
   const [form, setForm] = useState({ customer_id: "", quantity: "1", price: "0", notes: "" });
-  const [productData, setProductData] = useState<ProductData | null>(null);
-  const [productLoading, setProductLoading] = useState(true);
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
   const [customerForm, setCustomerForm] = useState({ name: "", email: "", phone: "", address: "" });
   const [customerSaving, setCustomerSaving] = useState(false);
-
-  const supabase = createClient();
 
   const total = parseFloat(form.price || "0") * parseInt(form.quantity || "0");
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const { data: ordersRes } = await supabase
-        .from("purchase_orders")
-        .select("*, customer:customers(name)")
-        .order("created_at", { ascending: false });
-
-      const { data: customersRes } = await supabase
-        .from("customers")
-        .select("id, name, email, phone")
-        .order("name");
-
-      if (ordersRes) setOrders(ordersRes as unknown as OrderRow[]);
-      if (customersRes) setCustomers(customersRes);
-    } catch (error) { console.error("Fetch error:", error); }
-    finally { setLoading(false); }
-  }, [supabase]);
-
-  const fetchProduct = useCallback(async () => {
-    setProductLoading(true);
-    try {
-      const res = await fetch("/api/products/bricks");
-      if (res.ok) {
-        const data = await res.json();
-        if (data.id) { setProductData(data); setProducts([data]); }
+      const [ordersRes, customersRes] = await Promise.all([
+        fetch("/api/orders"),
+        fetch("/api/customers"),
+      ]);
+      if (ordersRes.ok) {
+        const data = await ordersRes.json();
+        setOrders(data);
+      } else {
+        const err = await ordersRes.json();
+        toast.error("Failed to load orders: " + (err.error || "unknown error"));
       }
-    } catch (error) { console.error("Product fetch error:", error); }
-    finally { setProductLoading(false); }
+      if (customersRes.ok) {
+        const data = await customersRes.json();
+        setCustomers(data);
+      }
+    } catch (error) {
+      console.error("Fetch error:", error);
+      toast.error("Failed to load data");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  useEffect(() => { fetchData(); fetchProduct(); }, [fetchData, fetchProduct]);
+  const fetchOrderItems = useCallback(async (orderId: string) => {
+    try {
+      const res = await fetch(`/api/orders?id=${orderId}&items=true`);
+      if (res.ok) {
+        const data = await res.json();
+        return data.items || [];
+      }
+    } catch (error) { console.error("Items fetch error:", error); }
+    return [];
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleSave = async () => {
     if (!form.customer_id) { toast.error("Customer is required"); return; }
@@ -122,7 +114,6 @@ export default function SalesOrdersPage() {
         body: JSON.stringify({
           customer_id: form.customer_id,
           product: "Bricks",
-          product_id: productData?.id,
           quantity: parseInt(form.quantity),
           price: parseFloat(form.price),
           total,
@@ -139,10 +130,8 @@ export default function SalesOrdersPage() {
       fetchData();
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error);
-      console.error("Create order error:", error);
       toast.error(msg);
-    }
-    finally { setSaving(false); }
+    } finally { setSaving(false); }
   };
 
   const handleAddCustomer = async () => {
@@ -162,16 +151,21 @@ export default function SalesOrdersPage() {
       setForm({ ...form, customer_id: data.id });
       fetchData();
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : String(error);
-      console.error("Add customer error:", error);
-      toast.error(msg);
+      toast.error(error instanceof Error ? error.message : String(error));
     } finally { setCustomerSaving(false); }
   };
 
   const handleUpdateStatus = async (id: string, status: string) => {
     try {
-      const { error } = await supabase.from("purchase_orders").update({ status }).eq("id", id);
-      if (error) throw error;
+      const res = await fetch("/api/orders", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to update status");
+      }
       toast.success(`Order ${status}`);
       fetchData();
     } catch (error: unknown) { toast.error(error instanceof Error ? error.message : String(error)); }
@@ -180,8 +174,11 @@ export default function SalesOrdersPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this order?")) return;
     try {
-      const { error } = await supabase.from("purchase_orders").delete().eq("id", id);
-      if (error) throw error;
+      const res = await fetch(`/api/orders?id=${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to delete order");
+      }
       toast.success("Order deleted!");
       fetchData();
     } catch (error: unknown) { toast.error(error instanceof Error ? error.message : String(error)); }
@@ -189,13 +186,8 @@ export default function SalesOrdersPage() {
 
   const viewOrderDetail = async (order: OrderRow) => {
     setSelectedOrder(order as OrderRow & { items?: OrderItemRow[] });
-    try {
-      const { data } = await supabase
-        .from("purchase_order_items")
-        .select("*, product:products(name, sku)")
-        .eq("order_id", order.id);
-      setSelectedOrder((prev) => prev ? { ...prev, items: data as OrderItemRow[] } : null);
-    } catch (error) { console.error("Detail fetch error:", error); }
+    const items = await fetchOrderItems(order.id);
+    setSelectedOrder((prev) => prev ? { ...prev, items } : null);
     setDetailDialogOpen(true);
   };
 
@@ -389,7 +381,7 @@ export default function SalesOrdersPage() {
                   <TableBody>
                     {selectedOrder.items?.map((item) => (
                       <TableRow key={item.id}>
-                        <TableCell className="text-sm">{item.product?.name ?? "—"} ({item.product?.sku})</TableCell>
+                        <TableCell className="text-sm">{item.product?.name ?? "—"}</TableCell>
                         <TableCell className="text-right">{item.quantity}</TableCell>
                         <TableCell className="text-right">{formatCurrency(item.unit_price)}</TableCell>
                         <TableCell className="text-right font-medium">{formatCurrency(item.quantity * item.unit_price)}</TableCell>

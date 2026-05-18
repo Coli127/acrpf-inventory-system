@@ -1,6 +1,48 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createApiClient } from "@/lib/supabase/api-client";
 
+export async function GET(request: NextRequest) {
+  try {
+    const supabase = createApiClient();
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+    const items = searchParams.get("items");
+
+    if (id && items === "true") {
+      const { data, error } = await supabase
+        .from("purchase_order_items")
+        .select("*, product:products(name, sku)")
+        .eq("order_id", id);
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ items: data || [] });
+    }
+
+    if (id) {
+      const { data, error } = await supabase
+        .from("purchase_orders")
+        .select("*, customer:customers(name)")
+        .eq("id", id)
+        .single();
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json(data);
+    }
+
+    const { data, error } = await supabase
+      .from("purchase_orders")
+      .select("*, customer:customers(name)")
+      .order("created_at", { ascending: false });
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(data || []);
+  } catch (error: unknown) {
+    console.error("Orders GET error:", error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = createApiClient();
@@ -58,6 +100,53 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, order });
   } catch (error: unknown) {
     console.error("Orders API error:", error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const supabase = createApiClient();
+    const body = await request.json();
+    const { id, status } = body;
+
+    if (!id || !status) {
+      return NextResponse.json({ error: "Order ID and status are required" }, { status: 400 });
+    }
+
+    const { error } = await supabase.from("purchase_orders").update({ status }).eq("id", id);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    return NextResponse.json({ success: true });
+  } catch (error: unknown) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = createApiClient();
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json({ error: "Order ID is required" }, { status: 400 });
+    }
+
+    const { error: itemsError } = await supabase.from("purchase_order_items").delete().eq("order_id", id);
+    if (itemsError) return NextResponse.json({ error: itemsError.message }, { status: 500 });
+
+    const { error } = await supabase.from("purchase_orders").delete().eq("id", id);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    return NextResponse.json({ success: true });
+  } catch (error: unknown) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 }
