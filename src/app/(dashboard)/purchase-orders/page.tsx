@@ -137,9 +137,10 @@ export default function SalesOrdersPage() {
       setDialogOpen(false);
       setForm({ customer_id: "", quantity: "1", price: "0", notes: "" });
       fetchData();
-    } catch (error: unknown) { 
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : String(error);
       console.error("Create order error:", error);
-      toast.error(error instanceof Error ? error.message : "An unexpected error occurred"); 
+      toast.error(msg);
     }
     finally { setSaving(false); }
   };
@@ -161,8 +162,9 @@ export default function SalesOrdersPage() {
       setForm({ ...form, customer_id: data.id });
       fetchData();
     } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : String(error);
       console.error("Add customer error:", error);
-      toast.error(error instanceof Error ? error.message : "An unexpected error occurred");
+      toast.error(msg);
     } finally { setCustomerSaving(false); }
   };
 
@@ -172,7 +174,7 @@ export default function SalesOrdersPage() {
       if (error) throw error;
       toast.success(`Order ${status}`);
       fetchData();
-    } catch (error: unknown) { toast.error(error instanceof Error ? error.message : "An unexpected error occurred"); }
+    } catch (error: unknown) { toast.error(error instanceof Error ? error.message : String(error)); }
   };
 
   const handleDelete = async (id: string) => {
@@ -182,7 +184,7 @@ export default function SalesOrdersPage() {
       if (error) throw error;
       toast.success("Order deleted!");
       fetchData();
-    } catch (error: unknown) { toast.error(error instanceof Error ? error.message : "An unexpected error occurred"); }
+    } catch (error: unknown) { toast.error(error instanceof Error ? error.message : String(error)); }
   };
 
   const viewOrderDetail = async (order: OrderRow) => {
