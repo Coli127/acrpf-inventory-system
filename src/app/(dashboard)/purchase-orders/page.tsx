@@ -134,7 +134,10 @@ export default function SalesOrdersPage() {
       setDialogOpen(false);
       setForm({ customer_id: "", quantity: "1", price: "0", notes: "" });
       fetchData();
-    } catch (error: unknown) { toast.error(error instanceof Error ? error.message : "An unexpected error occurred"); }
+    } catch (error: unknown) { 
+      console.error("Create order error:", error);
+      toast.error(error instanceof Error ? error.message : "An unexpected error occurred"); 
+    }
     finally { setSaving(false); }
   };
 
