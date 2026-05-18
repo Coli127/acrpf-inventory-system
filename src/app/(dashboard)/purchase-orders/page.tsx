@@ -298,7 +298,7 @@ export default function SalesOrdersPage() {
             <div className="space-y-2"><Label>Customer *</Label>
               <Select value={form.customer_id} onValueChange={(v) => setForm({ ...form, customer_id: v ?? "" })}>
                 <SelectTrigger><SelectValue placeholder="Select customer" /></SelectTrigger>
-                <SelectContent>{customers.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}</SelectContent>
+                <SelectContent position="popper" className="z-[100]">{customers.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}</SelectContent>
               </Select>
             </div>
             <div className="space-y-2"><Label>Product</Label><Input value="Bricks" disabled className="bg-muted" /></div>
