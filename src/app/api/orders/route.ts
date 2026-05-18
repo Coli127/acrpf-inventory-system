@@ -7,6 +7,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
     const items = searchParams.get("items");
+    const customerId = searchParams.get("customer_id");
+    const count = searchParams.get("count");
 
     if (id && items === "true") {
       const { data, error } = await supabase
@@ -25,6 +27,25 @@ export async function GET(request: NextRequest) {
         .single();
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
       return NextResponse.json(data);
+    }
+
+    if (count === "true" && customerId) {
+      const { count: total, error } = await supabase
+        .from("purchase_orders")
+        .select("*", { count: "exact", head: true })
+        .eq("customer_id", customerId);
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ count: total || 0 });
+    }
+
+    if (customerId) {
+      const { data, error } = await supabase
+        .from("purchase_orders")
+        .select("*, customer:customers(name)")
+        .eq("customer_id", customerId)
+        .order("created_at", { ascending: false });
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json(data || []);
     }
 
     const { data, error } = await supabase

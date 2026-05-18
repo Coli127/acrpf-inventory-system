@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,11 +14,11 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { Users, Plus, Search, MoreHorizontal, Pencil, Trash2, Loader2, AlertTriangle, Mail, Phone, Building2, ShoppingCart } from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
 import type { Customer } from "@/lib/types";
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [orderCounts, setOrderCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -36,9 +36,23 @@ export default function CustomersPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     const { data } = await supabase.from("customers").select("*").order("name");
-    if (data) setCustomers(data as Customer[]);
+    if (data) {
+      setCustomers(data as Customer[]);
+      // Fetch order count for each customer
+      const counts: Record<string, number> = {};
+      await Promise.all(data.map(async (c: Customer) => {
+        try {
+          const res = await fetch(`/api/orders?customer_id=${c.id}&count=true`);
+          if (res.ok) {
+            const d = await res.json();
+            counts[c.id] = d.count || 0;
+          }
+        } catch {}
+      }));
+      setOrderCounts(counts);
+    }
     setLoading(false);
-  }, [supabase]);
+  }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -71,12 +85,19 @@ export default function CustomersPage() {
     setSelectedCustomer(customer);
     setOrdersLoading(true);
     setOrdersDialogOpen(true);
-    const { data } = await supabase
-      .from("purchase_orders")
-      .select("id, total_amount, status, created_at, notes")
-      .eq("customer_id", customer.id)
-      .order("created_at", { ascending: false });
-    setCustomerOrders(data || []);
+    try {
+      const res = await fetch(`/api/orders?customer_id=${customer.id}`);
+      if (res.ok) {
+        setCustomerOrders(await res.json());
+      } else {
+        const err = await res.json();
+        toast.error("Failed to load orders: " + (err.error || "unknown"));
+        setCustomerOrders([]);
+      }
+    } catch {
+      toast.error("Failed to load orders");
+      setCustomerOrders([]);
+    }
     setOrdersLoading(false);
   };
 
@@ -91,18 +112,22 @@ export default function CustomersPage() {
       <Card><CardContent className="p-4"><div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Search customers..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 max-w-sm" /></div></CardContent></Card>
 
       <Card><CardContent className="p-0"><Table><TableHeader><TableRow>
-        <TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Phone</TableHead><TableHead>Address</TableHead><TableHead>Created</TableHead><TableHead className="w-[50px]"></TableHead>
+        <TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Phone</TableHead><TableHead className="text-center">Orders</TableHead><TableHead>Created</TableHead><TableHead className="w-[50px]"></TableHead>
       </TableRow></TableHeader><TableBody>
         {loading ? (
-          <TableRow><TableCell colSpan={6} className="text-center h-32"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
+          <TableRow><TableCell colSpan={7} className="text-center h-32"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
         ) : filtered.length === 0 ? (
-          <TableRow><TableCell colSpan={6} className="text-center h-32 text-muted-foreground">No customers found</TableCell></TableRow>
+          <TableRow><TableCell colSpan={7} className="text-center h-32 text-muted-foreground">No customers found</TableCell></TableRow>
         ) : filtered.map((c) => (
           <TableRow key={c.id}>
             <TableCell><div className="flex items-center gap-3"><div className="h-9 w-9 rounded-lg bg-gradient-to-br from-primary/10 to-chart-3/10 flex items-center justify-center"><Building2 className="h-4 w-4 text-primary" /></div><span className="font-medium">{c.name}</span></div></TableCell>
             <TableCell className="text-sm">{c.email ? (<span className="flex items-center gap-1.5"><Mail className="h-3 w-3 text-muted-foreground" />{c.email}</span>) : "—"}</TableCell>
             <TableCell className="text-sm">{c.phone ? (<span className="flex items-center gap-1.5"><Phone className="h-3 w-3 text-muted-foreground" />{c.phone}</span>) : "—"}</TableCell>
-            <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">{c.address || "—"}</TableCell>
+            <TableCell className="text-center">
+              <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-semibold text-sm">
+                {orderCounts[c.id] ?? 0}
+              </span>
+            </TableCell>
             <TableCell className="text-sm text-muted-foreground">{formatDate(c.created_at)}</TableCell>
             <TableCell>
               <DropdownMenu>
@@ -140,7 +165,7 @@ export default function CustomersPage() {
           ) : (
             <Table>
               <TableHeader><TableRow>
-                <TableHead>Order ID</TableHead><TableHead className="text-right">Total</TableHead><TableHead>Status</TableHead><TableHead>Date</TableHead>
+                <TableHead>Order ID</TableHead><TableHead className="text-right">Total</TableHead><TableHead>Status</TableHead><TableHead>Date</TableHead><TableHead>Notes</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {customerOrders.map((o: any) => (
@@ -149,6 +174,7 @@ export default function CustomersPage() {
                     <TableCell className="text-right font-medium">{formatCurrency(o.total_amount)}</TableCell>
                     <TableCell><span className="capitalize text-sm">{o.status}</span></TableCell>
                     <TableCell className="text-sm text-muted-foreground">{new Date(o.created_at).toLocaleDateString()}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground max-w-[120px] truncate">{o.notes || "—"}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
