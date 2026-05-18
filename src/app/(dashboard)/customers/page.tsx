@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -31,25 +30,32 @@ export default function CustomersPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [customerOrders, setCustomerOrders] = useState<any[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
-  const supabase = createClient();
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase.from("customers").select("*").order("name");
-    if (data) {
-      setCustomers(data as Customer[]);
-      // Fetch order count for each customer
-      const counts: Record<string, number> = {};
-      await Promise.all(data.map(async (c: Customer) => {
-        try {
-          const res = await fetch(`/api/orders?customer_id=${c.id}&count=true`);
-          if (res.ok) {
-            const d = await res.json();
-            counts[c.id] = d.count || 0;
-          }
-        } catch {}
-      }));
-      setOrderCounts(counts);
+    try {
+      const res = await fetch("/api/customers");
+      if (res.ok) {
+        const data = await res.json();
+        setCustomers(data);
+        const counts: Record<string, number> = {};
+        await Promise.all(data.map(async (c: Customer) => {
+          try {
+            const r = await fetch(`/api/orders?customer_id=${c.id}&count=true`);
+            if (r.ok) {
+              const d = await r.json();
+              counts[c.id] = d.count || 0;
+            }
+          } catch {}
+        }));
+        setOrderCounts(counts);
+      } else {
+        const err = await res.json();
+        toast.error("Failed to load customers: " + (err.error || "unknown"));
+      }
+    } catch (error) {
+      console.error("Fetch error:", error);
+      toast.error("Failed to load data");
     }
     setLoading(false);
   }, []);
@@ -60,25 +66,35 @@ export default function CustomersPage() {
     if (!form.name) { toast.error("Name is required"); return; }
     setSaving(true);
     try {
-      const payload = { name: form.name, email: form.email || null, phone: form.phone || null, address: form.address || null };
+      let res;
       if (editing) {
-        const { error } = await supabase.from("customers").update(payload).eq("id", editing.id);
-        if (error) throw error;
-        toast.success("Customer updated");
+        res = await fetch("/api/customers", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: editing.id, ...form }),
+        });
       } else {
-        const { error } = await supabase.from("customers").insert(payload);
-        if (error) throw error;
-        toast.success("Customer created");
+        res = await fetch("/api/customers", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(form),
+        });
       }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to save");
+      toast.success(editing ? "Customer updated" : "Customer created");
       setDialogOpen(false); setForm({ name: "", email: "", phone: "", address: "" }); setEditing(null); fetchData();
-    } catch (error: unknown) { toast.error(error instanceof Error ? error.message : "An unexpected error occurred"); } finally { setSaving(false); }
+    } catch (error: unknown) { toast.error(error instanceof Error ? error.message : String(error)); } finally { setSaving(false); }
   };
 
   const handleDelete = async () => {
     if (!deleting) return;
-    const { error } = await supabase.from("customers").delete().eq("id", deleting.id);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Customer deleted"); setDeleteDialogOpen(false); setDeleting(null); fetchData();
+    try {
+      const res = await fetch(`/api/customers?id=${deleting.id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to delete");
+      toast.success("Customer deleted"); setDeleteDialogOpen(false); setDeleting(null); fetchData();
+    } catch (error: unknown) { toast.error(error instanceof Error ? error.message : String(error)); }
   };
 
   const viewOrders = async (customer: Customer) => {
@@ -90,12 +106,9 @@ export default function CustomersPage() {
       if (res.ok) {
         setCustomerOrders(await res.json());
       } else {
-        const err = await res.json();
-        toast.error("Failed to load orders: " + (err.error || "unknown"));
         setCustomerOrders([]);
       }
     } catch {
-      toast.error("Failed to load orders");
       setCustomerOrders([]);
     }
     setOrdersLoading(false);
@@ -112,17 +125,18 @@ export default function CustomersPage() {
       <Card><CardContent className="p-4"><div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Search customers..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 max-w-sm" /></div></CardContent></Card>
 
       <Card><CardContent className="p-0"><Table><TableHeader><TableRow>
-        <TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Phone</TableHead><TableHead className="text-center">Orders</TableHead><TableHead>Created</TableHead><TableHead className="w-[50px]"></TableHead>
+        <TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Phone</TableHead><TableHead>Address</TableHead><TableHead className="text-center">Orders</TableHead><TableHead>Created</TableHead><TableHead className="w-[50px]"></TableHead>
       </TableRow></TableHeader><TableBody>
         {loading ? (
-          <TableRow><TableCell colSpan={7} className="text-center h-32"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
+          <TableRow><TableCell colSpan={8} className="text-center h-32"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
         ) : filtered.length === 0 ? (
-          <TableRow><TableCell colSpan={7} className="text-center h-32 text-muted-foreground">No customers found</TableCell></TableRow>
+          <TableRow><TableCell colSpan={8} className="text-center h-32 text-muted-foreground">No customers found</TableCell></TableRow>
         ) : filtered.map((c) => (
           <TableRow key={c.id}>
             <TableCell><div className="flex items-center gap-3"><div className="h-9 w-9 rounded-lg bg-gradient-to-br from-primary/10 to-chart-3/10 flex items-center justify-center"><Building2 className="h-4 w-4 text-primary" /></div><span className="font-medium">{c.name}</span></div></TableCell>
             <TableCell className="text-sm">{c.email ? (<span className="flex items-center gap-1.5"><Mail className="h-3 w-3 text-muted-foreground" />{c.email}</span>) : "—"}</TableCell>
             <TableCell className="text-sm">{c.phone ? (<span className="flex items-center gap-1.5"><Phone className="h-3 w-3 text-muted-foreground" />{c.phone}</span>) : "—"}</TableCell>
+            <TableCell className="text-sm text-muted-foreground max-w-[150px] truncate">{c.address || "—"}</TableCell>
             <TableCell className="text-center">
               <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-semibold text-sm">
                 {orderCounts[c.id] ?? 0}
