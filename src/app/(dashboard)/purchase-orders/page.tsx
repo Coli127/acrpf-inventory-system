@@ -68,6 +68,9 @@ export default function SalesOrdersPage() {
   const [form, setForm] = useState({ customer_id: "", quantity: "1", price: "0", notes: "" });
   const [productData, setProductData] = useState<ProductData | null>(null);
   const [productLoading, setProductLoading] = useState(true);
+  const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
+  const [customerForm, setCustomerForm] = useState({ name: "", email: "", phone: "", address: "" });
+  const [customerSaving, setCustomerSaving] = useState(false);
 
   const supabase = createClient();
 
@@ -139,6 +142,27 @@ export default function SalesOrdersPage() {
       toast.error(error instanceof Error ? error.message : "An unexpected error occurred"); 
     }
     finally { setSaving(false); }
+  };
+
+  const handleAddCustomer = async () => {
+    if (!customerForm.name) { toast.error("Name is required"); return; }
+    setCustomerSaving(true);
+    try {
+      const { data, error } = await supabase
+        .from("customers")
+        .insert({ name: customerForm.name, email: customerForm.email || null, phone: customerForm.phone || null, address: customerForm.address || null })
+        .select("id, name")
+        .single();
+      if (error) throw error;
+      toast.success("Customer created!");
+      setCustomerDialogOpen(false);
+      setCustomerForm({ name: "", email: "", phone: "", address: "" });
+      setForm({ ...form, customer_id: data.id });
+      fetchData();
+    } catch (error: unknown) {
+      console.error("Add customer error:", error);
+      toast.error(error instanceof Error ? error.message : "An unexpected error occurred");
+    } finally { setCustomerSaving(false); }
   };
 
   const handleUpdateStatus = async (id: string, status: string) => {
@@ -299,10 +323,17 @@ export default function SalesOrdersPage() {
           <DialogHeader><DialogTitle>Create Sales Order</DialogTitle><DialogDescription>Select a customer and enter quantity</DialogDescription></DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2"><Label>Customer *</Label>
-              <Select value={form.customer_id} onValueChange={(v) => setForm({ ...form, customer_id: v ?? "" })}>
-                <SelectTrigger><SelectValue placeholder="Select customer" /></SelectTrigger>
-                <SelectContent style={{ zIndex: 100 }}>{customers.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}</SelectContent>
-              </Select>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <Select value={form.customer_id} onValueChange={(v) => setForm({ ...form, customer_id: v ?? "" })}>
+                    <SelectTrigger><SelectValue placeholder="Select customer" /></SelectTrigger>
+                    <SelectContent style={{ zIndex: 100 }}>{customers.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}</SelectContent>
+                  </Select>
+                </div>
+                <Button variant="outline" size="icon" type="button" onClick={() => { setCustomerForm({ name: "", email: "", phone: "", address: "" }); setCustomerDialogOpen(true); }} className="shrink-0">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
             <div className="space-y-2"><Label>Product</Label><Input value="Bricks" disabled className="bg-muted" /></div>
             <div className="grid grid-cols-2 gap-4">
@@ -315,6 +346,25 @@ export default function SalesOrdersPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleSave} disabled={saving || !form.customer_id || !form.price || parseFloat(form.price) <= 0}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Create Order</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Customer Dialog */}
+      <Dialog open={customerDialogOpen} onOpenChange={setCustomerDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Add Customer</DialogTitle><DialogDescription>Add a new customer</DialogDescription></DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2"><Label>Name *</Label><Input value={customerForm.name} onChange={(e) => setCustomerForm({ ...customerForm, name: e.target.value })} placeholder="Customer name" /></div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2"><Label>Email</Label><Input type="email" value={customerForm.email} onChange={(e) => setCustomerForm({ ...customerForm, email: e.target.value })} placeholder="email@example.com" /></div>
+              <div className="space-y-2"><Label>Phone</Label><Input value={customerForm.phone} onChange={(e) => setCustomerForm({ ...customerForm, phone: e.target.value })} placeholder="+63 900 000 0000" /></div>
+            </div>
+            <div className="space-y-2"><Label>Address</Label><Textarea value={customerForm.address} onChange={(e) => setCustomerForm({ ...customerForm, address: e.target.value })} placeholder="Full address" rows={2} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCustomerDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleAddCustomer} disabled={customerSaving || !customerForm.name}>{customerSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Create</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
