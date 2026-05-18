@@ -148,12 +148,13 @@ export default function SalesOrdersPage() {
     if (!customerForm.name) { toast.error("Name is required"); return; }
     setCustomerSaving(true);
     try {
-      const { data, error } = await supabase
-        .from("customers")
-        .insert({ name: customerForm.name, email: customerForm.email || null, phone: customerForm.phone || null, address: customerForm.address || null })
-        .select("id, name")
-        .single();
-      if (error) throw error;
+      const res = await fetch("/api/customers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(customerForm),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to create customer");
       toast.success("Customer created!");
       setCustomerDialogOpen(false);
       setCustomerForm({ name: "", email: "", phone: "", address: "" });
