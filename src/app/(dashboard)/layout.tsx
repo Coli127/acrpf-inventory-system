@@ -27,12 +27,14 @@ import {
   ShoppingCart,
   Users,
   Calendar,
+  Contact,
 } from "lucide-react";
 import type { Profile, Notification } from "@/lib/types";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Purchases", href: "/purchase-orders", icon: ShoppingCart },
+  { name: "Customers", href: "/customers", icon: Contact },
   { name: "Bricks", href: "/bricks", icon: Grid3X3 },
   { name: "Daily Journal", href: "/journal", icon: BookOpen },
   { name: "Schedule", href: "/schedule", icon: CalendarCheck },

@@ -290,10 +290,10 @@ export default function BricksPage() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl">
           <DialogHeader><DialogTitle>{editingEntry ? "Edit Entry" : `Add ${addYear} Entry`}</DialogTitle></DialogHeader>
-          <div className="grid grid-cols-2 gap-4 py-4 max-h-[60vh] overflow-y-auto">
-            <div className="col-span-2 space-y-2"><Label>Date *</Label><Input type="date" value={form.date} onChange={(e) => setForm({...form, date: e.target.value})} /></div>
+          <div className="grid grid-cols-3 gap-4 py-4">
+            <div className="col-span-3 space-y-2"><Label>Date *</Label><Input type="date" value={form.date} onChange={(e) => setForm({...form, date: e.target.value})} /></div>
             <div className="space-y-2"><Label>Newly Printed</Label><Input type="number" value={form.newly_printed} onChange={(e) => setForm({...form, newly_printed: e.target.value})} /></div>
             <div className="space-y-2"><Label>Bricks in Kiln</Label><Input type="number" value={form.bricks_in_kiln} onChange={(e) => setForm({...form, bricks_in_kiln: e.target.value})} /></div>
             <div className="space-y-2"><Label>Reclaimed Newly Printed</Label><Input type="number" value={form.reclaimed_newly_printed} onChange={(e) => setForm({...form, reclaimed_newly_printed: e.target.value})} /></div>
@@ -305,7 +305,7 @@ export default function BricksPage() {
             <div className="space-y-2"><Label>Total Fired</Label><Input type="number" value={form.total_fired} onChange={(e) => setForm({...form, total_fired: e.target.value})} /></div>
             <div className="space-y-2"><Label>Overall Total</Label><Input type="number" value={form.overall_total} onChange={(e) => setForm({...form, overall_total: e.target.value})} /></div>
             <div className="space-y-2"><Label>Deficit</Label><Input type="number" value={form.deficit} onChange={(e) => setForm({...form, deficit: e.target.value})} /></div>
-            <div className="col-span-2 space-y-2"><Label>Remarks</Label><Textarea value={form.remarks} onChange={(e) => setForm({...form, remarks: e.target.value})} rows={2} /></div>
+            <div className="col-span-3 space-y-2"><Label>Remarks</Label><Textarea value={form.remarks} onChange={(e) => setForm({...form, remarks: e.target.value})} rows={2} /></div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddDialogOpen(false)}>Cancel</Button>

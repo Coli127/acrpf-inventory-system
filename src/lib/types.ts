@@ -101,6 +101,15 @@ export interface ActivityLog {
   profile?: Profile;
 }
 
+export interface Customer {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  created_at: string;
+}
+
 export interface Notification {
   id: string;
   user_id: string;
