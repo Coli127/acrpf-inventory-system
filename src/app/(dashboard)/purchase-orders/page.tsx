@@ -270,8 +270,8 @@ export default function SalesOrdersPage() {
                     <TableCell className="border border-border font-medium">{o.customer?.name ?? "—"}</TableCell>
                     <TableCell className="border border-border text-center">{getStatusBadge(o.status)}</TableCell>
                     <TableCell className="border border-border text-right font-semibold">{formatCurrency(o.total_amount)}</TableCell>
-                    <TableCell className="border border-border text-sm text-muted-foreground">
-                      {new Date(o.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    <TableCell className="border border-border text-sm text-muted-foreground whitespace-nowrap">
+                      {new Date(o.created_at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
                     </TableCell>
                     <TableCell className="border border-border sticky right-0 bg-inherit">
                       <div className="flex gap-1 justify-center">

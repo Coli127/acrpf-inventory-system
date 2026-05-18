@@ -190,7 +190,7 @@ export default function CustomersPage() {
                                     <TableCell className="font-mono text-xs">{o.id.slice(0, 8).toUpperCase()}</TableCell>
                                     <TableCell className="text-right font-medium">{formatCurrency(o.total_amount)}</TableCell>
                                     <TableCell>{getStatusBadge(o.status)}</TableCell>
-                                    <TableCell className="text-sm text-muted-foreground">{new Date(o.created_at).toLocaleDateString()}</TableCell>
+                                    <TableCell className="text-sm text-muted-foreground whitespace-nowrap">{new Date(o.created_at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</TableCell>
                                     <TableCell className="text-sm text-muted-foreground max-w-[120px] truncate">{o.notes || "—"}</TableCell>
                                   </TableRow>
                                 ))}
