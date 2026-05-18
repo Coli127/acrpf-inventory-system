@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatDate } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -271,7 +271,7 @@ export default function SalesOrdersPage() {
                     <TableCell className="border border-border text-center">{getStatusBadge(o.status)}</TableCell>
                     <TableCell className="border border-border text-right font-semibold">{formatCurrency(o.total_amount)}</TableCell>
                     <TableCell className="border border-border text-sm text-muted-foreground whitespace-nowrap">
-                      {new Date(o.created_at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                      {formatDate(o.created_at)}
                     </TableCell>
                     <TableCell className="border border-border sticky right-0 bg-inherit">
                       <div className="flex gap-1 justify-center">

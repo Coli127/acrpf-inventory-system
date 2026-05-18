@@ -14,7 +14,7 @@ export function formatCurrency(amount: number): string {
 }
 
 export function formatDate(date: string | Date): string {
-  return format(new Date(date), "MMM dd, yyyy")
+  return format(new Date(date), "MMM dd, yyyy, h:mm a")
 }
 
 export function formatDateTime(date: string | Date): string {
