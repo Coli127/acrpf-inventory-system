@@ -13,7 +13,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { Users, Plus, Search, MoreHorizontal, Pencil, Trash2, Loader2, AlertTriangle, Mail, Phone, Building2 } from "lucide-react";
+import { Users, Plus, Search, MoreHorizontal, Pencil, Trash2, Loader2, AlertTriangle, Mail, Phone, Building2, ShoppingCart } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
 import type { Customer } from "@/lib/types";
 
 export default function CustomersPage() {
@@ -26,6 +27,10 @@ export default function CustomersPage() {
   const [deleting, setDeleting] = useState<Customer | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", phone: "", address: "" });
+  const [ordersDialogOpen, setOrdersDialogOpen] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [customerOrders, setCustomerOrders] = useState<any[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
   const supabase = createClient();
 
   const fetchData = useCallback(async () => {
@@ -62,6 +67,19 @@ export default function CustomersPage() {
     toast.success("Customer deleted"); setDeleteDialogOpen(false); setDeleting(null); fetchData();
   };
 
+  const viewOrders = async (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setOrdersLoading(true);
+    setOrdersDialogOpen(true);
+    const { data } = await supabase
+      .from("purchase_orders")
+      .select("id, total_amount, status, created_at, notes")
+      .eq("customer_id", customer.id)
+      .order("created_at", { ascending: false });
+    setCustomerOrders(data || []);
+    setOrdersLoading(false);
+  };
+
   const filtered = customers.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()) || (c.email && c.email.toLowerCase().includes(search.toLowerCase())));
 
   return (
@@ -90,6 +108,7 @@ export default function CustomersPage() {
               <DropdownMenu>
                 <DropdownMenuTrigger className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-accent"><MoreHorizontal className="h-4 w-4" /></DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => viewOrders(c)}><ShoppingCart className="mr-2 h-4 w-4" />View Orders</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => { setEditing(c); setForm({ name: c.name, email: c.email || "", phone: c.phone || "", address: c.address || "" }); setDialogOpen(true); }}><Pencil className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
                   <DropdownMenuItem variant="destructive" onClick={() => { setDeleting(c); setDeleteDialogOpen(true); }}><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem>
                 </DropdownMenuContent>
@@ -109,6 +128,33 @@ export default function CustomersPage() {
           <div className="space-y-2"><Label>Address</Label><Textarea value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Full address" rows={2} /></div>
         </div>
         <DialogFooter><Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button><Button onClick={handleSave} disabled={saving}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{editing ? "Update" : "Create"}</Button></DialogFooter>
+      </DialogContent></Dialog>
+
+      <Dialog open={ordersDialogOpen} onOpenChange={setOrdersDialogOpen}><DialogContent className="max-w-lg">
+        <DialogHeader><DialogTitle>Orders — {selectedCustomer?.name}</DialogTitle><DialogDescription>Sales orders for this customer</DialogDescription></DialogHeader>
+        <div className="max-h-80 overflow-auto">
+          {ordersLoading ? (
+            <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+          ) : customerOrders.length === 0 ? (
+            <p className="text-center py-8 text-muted-foreground">No orders found for this customer</p>
+          ) : (
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Order ID</TableHead><TableHead className="text-right">Total</TableHead><TableHead>Status</TableHead><TableHead>Date</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {customerOrders.map((o: any) => (
+                  <TableRow key={o.id}>
+                    <TableCell className="font-mono text-xs">{o.id.slice(0, 8).toUpperCase()}</TableCell>
+                    <TableCell className="text-right font-medium">{formatCurrency(o.total_amount)}</TableCell>
+                    <TableCell><span className="capitalize text-sm">{o.status}</span></TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{new Date(o.created_at).toLocaleDateString()}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </div>
       </DialogContent></Dialog>
 
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}><DialogContent>
