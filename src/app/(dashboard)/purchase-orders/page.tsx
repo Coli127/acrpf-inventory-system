@@ -25,6 +25,7 @@ interface OrderRow {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  order_number?: string | null;
   customer?: { name: string } | null;
 }
 
@@ -273,7 +274,7 @@ export default function SalesOrdersPage() {
               ) : (
                 filtered.map((o, index) => (
                   <TableRow key={o.id} className={index % 2 === 0 ? "bg-background" : "bg-muted/30"}>
-                    <TableCell className="border border-border font-mono text-xs">{o.id.slice(0, 8).toUpperCase()}</TableCell>
+                    <TableCell className="border border-border font-mono text-xs font-semibold">{o.order_number || o.id.slice(0, 8).toUpperCase()}</TableCell>
                     <TableCell className="border border-border font-medium">{o.customer?.name ?? "—"}</TableCell>
                     <TableCell className="border border-border text-center">{getStatusBadge(o.status)}</TableCell>
                     <TableCell className="border border-border text-right font-semibold">{formatCurrency(o.total_amount)}</TableCell>
@@ -374,7 +375,7 @@ export default function SalesOrdersPage() {
       {/* Detail Dialog */}
       <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
         <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>Order Details</DialogTitle><DialogDescription>Order {selectedOrder?.id.slice(0, 8).toUpperCase()}</DialogDescription></DialogHeader>
+          <DialogHeader><DialogTitle>Order Details</DialogTitle><DialogDescription>Order {selectedOrder?.order_number || selectedOrder?.id.slice(0, 8).toUpperCase()}</DialogDescription></DialogHeader>
           {selectedOrder && (
             <div className="space-y-4">
               <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Status</span>{getStatusBadge(selectedOrder.status)}</div>

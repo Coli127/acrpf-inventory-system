@@ -97,6 +97,23 @@ export async function POST(request: NextRequest) {
       userId = user?.id || null;
     } catch { /* session optional */ }
 
+    // Generate order number: SO-{year}-{0001}
+    const year = new Date().getFullYear().toString();
+    const { data: lastOrder } = await supabase
+      .from("purchase_orders")
+      .select("order_number")
+      .like("order_number", `SO-${year}-%`)
+      .order("order_number", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    let nextNum = 1;
+    if (lastOrder?.order_number) {
+      const parts = lastOrder.order_number.split("-");
+      nextNum = parseInt(parts[2], 10) + 1;
+    }
+    const orderNumber = `SO-${year}-${String(nextNum).padStart(4, "0")}`;
+
     const { data: order, error } = await supabase
       .from("purchase_orders")
       .insert({
@@ -105,6 +122,7 @@ export async function POST(request: NextRequest) {
         total_amount: amount,
         created_by: userId,
         status: "draft",
+        order_number: orderNumber,
       })
       .select()
       .single();
