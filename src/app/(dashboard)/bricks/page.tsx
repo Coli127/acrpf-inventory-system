@@ -182,52 +182,64 @@ export default function BricksPage() {
   };
 
   const renderTable = (data: BricksEntry[], year: number) => (
-    <div className="overflow-x-auto bg-white dark:bg-zinc-950">
+    <div className="overflow-x-auto bg-white dark:bg-zinc-950 border rounded-lg">
       <div className="px-4 py-2 border-b flex items-center justify-between bg-muted/30">
         <span className="text-sm text-muted-foreground">{data.length} entries</span>
         <Button size="sm" onClick={() => openAddDialog(year)} className="gap-2">
           <Plus className="h-4 w-4" />Add Entry
         </Button>
       </div>
-      <Table className="border-collapse">
-        <TableHeader>
-          <TableRow className="bg-muted/50">
-            <TableHead className="border border-border text-center font-bold min-w-[120px] sticky left-0 bg-muted/50">Date</TableHead>
-            <TableHead className="border border-border text-center font-bold min-w-[130px]">Newly Printed</TableHead>
-            <TableHead className="border border-border text-center font-bold min-w-[120px]">In Kiln</TableHead>
-            <TableHead className="border border-border text-center font-bold min-w-[120px]">Reclaimed</TableHead>
-            <TableHead className="border border-border text-center font-bold min-w-[130px]">Deployed</TableHead>
-            <TableHead className="border border-border text-center font-bold min-w-[120px]">Total Fired</TableHead>
-            <TableHead className="border border-border text-center font-bold min-w-[120px]">Total</TableHead>
-            <TableHead className="border border-border text-center font-bold min-w-[150px]">Remarks</TableHead>
-            <TableHead className="border border-border text-center font-bold sticky right-0 bg-muted/50 min-w-[100px]">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {data.map((entry, idx) => (
-            <TableRow key={entry.id} className={idx % 2 === 0 ? "bg-background" : "bg-muted/30"}>
-              <TableCell className="border border-border font-medium sticky left-0 bg-inherit">{formatDate(entry.date)}</TableCell>
-              <TableCell className="border border-border text-right">{entry.newly_printed?.toLocaleString() ?? "-"}</TableCell>
-              <TableCell className="border border-border text-right">{entry.bricks_in_kiln?.toLocaleString() ?? "-"}</TableCell>
-              <TableCell className="border border-border text-right">{((entry.reclaimed_newly_printed || 0) + (entry.reclaimed_air_dried || 0)).toLocaleString()}</TableCell>
-              <TableCell className="border border-border text-right">{entry.deployed_delivered?.toLocaleString() ?? "-"}</TableCell>
-              <TableCell className="border border-border text-right">{entry.total_fired?.toLocaleString() ?? "-"}</TableCell>
-              <TableCell className="border border-border text-right font-semibold">{entry.overall_total?.toLocaleString() ?? "-"}</TableCell>
-              <TableCell className="border border-border max-w-[200px] truncate text-sm">{entry.remarks || "-"}</TableCell>
-              <TableCell className="border border-border sticky right-0 bg-inherit">
-                <div className="flex gap-1 justify-center">
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditDialog(entry)}>
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(entry.id)}>
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      <div className="min-w-[1400px]">
+        <table className="w-full border-collapse text-xs">
+          <thead>
+            <tr className="bg-muted/50">
+              <th className="border border-border px-2 py-2.5 text-center font-bold sticky left-0 bg-muted/50 min-w-[100px]">Date</th>
+              <th className="border border-border px-2 py-2.5 text-center font-bold min-w-[90px]">Newly Printed</th>
+              <th className="border border-border px-2 py-2.5 text-center font-bold min-w-[80px]">In Kiln</th>
+              <th className="border border-border px-2 py-2.5 text-center font-bold min-w-[105px]">Reclaimed (NP)</th>
+              <th className="border border-border px-2 py-2.5 text-center font-bold min-w-[100px]">Reclaimed (AD)</th>
+              <th className="border border-border px-2 py-2.5 text-center font-bold min-w-[90px]">Deployed</th>
+              <th className="border border-border px-2 py-2.5 text-center font-bold min-w-[95px]">Bricks w/ Cracks</th>
+              <th className="border border-border px-2 py-2.5 text-center font-bold min-w-[85px]">Total AD</th>
+              <th className="border border-border px-2 py-2.5 text-center font-bold min-w-[80px]">Actual Count</th>
+              <th className="border border-border px-2 py-2.5 text-center font-bold min-w-[75px]">Fired</th>
+              <th className="border border-border px-2 py-2.5 text-center font-bold min-w-[80px]">Total</th>
+              <th className="border border-border px-2 py-2.5 text-center font-bold min-w-[70px]">Deficit</th>
+              <th className="border border-border px-2 py-2.5 text-center font-bold min-w-[200px]">Remarks</th>
+              <th className="border border-border px-2 py-2.5 text-center font-bold sticky right-0 bg-muted/50 min-w-[80px]">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((entry, idx) => (
+              <tr key={entry.id} className={idx % 2 === 0 ? "bg-background" : "bg-muted/30"}>
+                <td className="border border-border px-2 py-2 sticky left-0 bg-inherit font-medium whitespace-nowrap">{formatDate(entry.date)}</td>
+                <td className="border border-border px-2 py-2 text-right tabular-nums">{entry.newly_printed?.toLocaleString() ?? "-"}</td>
+                <td className="border border-border px-2 py-2 text-right tabular-nums">{entry.bricks_in_kiln?.toLocaleString() ?? "-"}</td>
+                <td className="border border-border px-2 py-2 text-right tabular-nums">{entry.reclaimed_newly_printed?.toLocaleString() ?? "-"}</td>
+                <td className="border border-border px-2 py-2 text-right tabular-nums">{entry.reclaimed_air_dried?.toLocaleString() ?? "-"}</td>
+                <td className="border border-border px-2 py-2 text-right tabular-nums">{entry.deployed_delivered?.toLocaleString() ?? "-"}</td>
+                <td className="border border-border px-2 py-2 text-right tabular-nums">{entry.bricks_with_cracks?.toLocaleString() ?? "-"}</td>
+                <td className="border border-border px-2 py-2 text-right tabular-nums">{entry.total_air_dried?.toLocaleString() ?? "-"}</td>
+                <td className="border border-border px-2 py-2 text-right tabular-nums">{entry.actual_count?.toLocaleString() ?? "-"}</td>
+                <td className="border border-border px-2 py-2 text-right tabular-nums">{entry.total_fired?.toLocaleString() ?? "-"}</td>
+                <td className="border border-border px-2 py-2 text-right tabular-nums font-semibold">{entry.overall_total?.toLocaleString() ?? "-"}</td>
+                <td className="border border-border px-2 py-2 text-right tabular-nums text-red-500">{entry.deficit?.toLocaleString() ?? "-"}</td>
+                <td className="border border-border px-2 py-2 text-sm min-w-[200px] max-w-[300px] truncate">{entry.remarks || "-"}</td>
+                <td className="border border-border px-2 py-2 sticky right-0 bg-inherit">
+                  <div className="flex gap-1 justify-center">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditDialog(entry)}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(entry.id)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 
