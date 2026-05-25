@@ -75,6 +75,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Customer and quantity are required" }, { status: 400 });
     }
 
+    if (!product_id) {
+      return NextResponse.json({ error: "Product is required" }, { status: 400 });
+    }
+
     const qty = parseInt(quantity);
     const unitPrice = parseFloat(price) || 0;
     const amount = parseFloat(total) || (qty * unitPrice);
@@ -111,7 +115,7 @@ export async function POST(request: NextRequest) {
       .from("purchase_order_items")
       .insert({
         order_id: order.id,
-        product_id: product_id || null,
+        product_id,
         quantity: qty,
         unit_price: unitPrice,
       });

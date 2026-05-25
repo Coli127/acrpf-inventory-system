@@ -59,16 +59,22 @@ export default function SalesOrdersPage() {
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
   const [customerForm, setCustomerForm] = useState({ name: "", email: "", phone: "", address: "" });
   const [customerSaving, setCustomerSaving] = useState(false);
+  const [productId, setProductId] = useState<string | null>(null);
 
   const total = parseFloat(form.price || "0") * parseInt(form.quantity || "0");
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [ordersRes, customersRes] = await Promise.all([
+      const [ordersRes, customersRes, productRes] = await Promise.all([
         fetch("/api/orders"),
         fetch("/api/customers"),
+        fetch("/api/products/bricks"),
       ]);
+      if (productRes.ok) {
+        const data = await productRes.json();
+        setProductId(data.id);
+      }
       if (ordersRes.ok) {
         const data = await ordersRes.json();
         setOrders(data);
@@ -105,6 +111,7 @@ export default function SalesOrdersPage() {
     if (!form.customer_id) { toast.error("Customer is required"); return; }
     if (!form.quantity || parseInt(form.quantity) < 1) { toast.error("Valid quantity is required"); return; }
     if (!form.price || parseFloat(form.price) < 0) { toast.error("Valid price is required"); return; }
+    if (!productId) { toast.error("Product not found — try refreshing"); return; }
 
     setSaving(true);
     try {
@@ -113,7 +120,7 @@ export default function SalesOrdersPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           customer_id: form.customer_id,
-          product: "Bricks",
+          product_id: productId,
           quantity: parseInt(form.quantity),
           price: parseFloat(form.price),
           total,
