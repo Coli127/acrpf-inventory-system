@@ -30,6 +30,8 @@ export default function CustomersPage() {
   const [ordersData, setOrdersData] = useState<any[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [selectedName, setSelectedName] = useState("");
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -104,6 +106,9 @@ export default function CustomersPage() {
   };
 
   const filtered = customers.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()) || (c.email && c.email.toLowerCase().includes(search.toLowerCase())));
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);
+  useEffect(() => { setPage(1); }, [search]);
 
   return (
     <div className="space-y-6">
@@ -113,14 +118,14 @@ export default function CustomersPage() {
 
       <Card><CardContent className="p-4"><div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Search customers..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 max-w-sm" /></div></CardContent></Card>
 
-      <Card><CardContent className="p-0"><Table><TableHeader><TableRow>
+      <Card><CardContent className="p-0"><div className="overflow-x-auto"><Table><TableHeader><TableRow>
         <TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Phone</TableHead><TableHead>Address</TableHead><TableHead>Created</TableHead><TableHead className="w-[50px]"></TableHead>
       </TableRow></TableHeader><TableBody>
         {loading ? (
           <TableRow><TableCell colSpan={6} className="text-center h-32"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
-        ) : filtered.length === 0 ? (
+        ) : paginated.length === 0 ? (
           <TableRow><TableCell colSpan={6} className="text-center h-32 text-muted-foreground">No customers found</TableCell></TableRow>
-        ) : filtered.map((c) => (
+        ) : paginated.map((c) => (
           <TableRow key={c.id}>
             <TableCell><div className="flex items-center gap-3 cursor-pointer" onClick={() => viewOrders(c)}><div className="h-9 w-9 rounded-lg bg-gradient-to-br from-primary/10 to-chart-3/10 flex items-center justify-center"><Building2 className="h-4 w-4 text-primary" /></div><span className="font-medium hover:underline">{c.name}</span></div></TableCell>
             <TableCell className="text-sm">{c.email ? (<span className="flex items-center gap-1.5"><Mail className="h-3 w-3 text-muted-foreground" />{c.email}</span>) : "—"}</TableCell>
@@ -137,7 +142,17 @@ export default function CustomersPage() {
               </DropdownMenu>
             </TableCell>
           </TableRow>
-        ))}</TableBody></Table></CardContent></Card>
+        ))}</TableBody></Table></div>
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-4 py-3 border-t">
+              <span className="text-sm text-muted-foreground">Page {page} of {totalPages} ({filtered.length} total)</span>
+              <div className="flex gap-1">
+                <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>Prev</Button>
+                <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>Next</Button>
+              </div>
+            </div>
+          )}
+        </CardContent></Card>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}><DialogContent>
         <DialogHeader><DialogTitle>{editing ? "Edit Customer" : "Add Customer"}</DialogTitle><DialogDescription>{editing ? "Update customer details" : "Add a new customer"}</DialogDescription></DialogHeader>

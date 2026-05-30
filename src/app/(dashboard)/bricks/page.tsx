@@ -41,6 +41,8 @@ export default function BricksPage() {
   const [editingEntry, setEditingEntry] = useState<BricksEntry | null>(null);
   const [addYear, setAddYear] = useState<number>(2026);
   const [saving, setSaving] = useState(false);
+  const [brickPage, setBrickPage] = useState<Record<number, number>>({ 2025: 1, 2026: 1 });
+  const pageSize = 10;
 
   const [form, setForm] = useState({
     date: new Date().toISOString().split("T")[0],
@@ -181,13 +183,23 @@ export default function BricksPage() {
     } catch (error: unknown) { toast.error(error instanceof Error ? error.message : "An unexpected error occurred"); }
   };
 
-  const renderTable = (data: BricksEntry[], year: number) => (
+  const renderTable = (data: BricksEntry[], year: number) => {
+    const currentPage = brickPage[year] || 1;
+    const totalBrickPages = Math.max(1, Math.ceil(data.length / pageSize));
+    const paginatedData = data.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+    return (
     <div className="overflow-x-auto bg-white dark:bg-zinc-950 border rounded-lg">
       <div className="px-4 py-2 border-b flex items-center justify-between bg-muted/30">
         <span className="text-sm text-muted-foreground">{data.length} entries</span>
-        <Button size="sm" onClick={() => openAddDialog(year)} className="gap-2">
-          <Plus className="h-4 w-4" />Add Entry
-        </Button>
+        <div className="flex items-center gap-2">
+          {totalBrickPages > 1 && (
+            <span className="text-xs text-muted-foreground">Page {currentPage} of {totalBrickPages}</span>
+          )}
+          <Button size="sm" onClick={() => openAddDialog(year)} className="gap-2">
+            <Plus className="h-4 w-4" />Add Entry
+          </Button>
+        </div>
       </div>
       <div className="min-w-[1400px]">
         <table className="w-full border-collapse text-xs">
@@ -210,7 +222,7 @@ export default function BricksPage() {
             </tr>
           </thead>
           <tbody>
-            {data.map((entry, idx) => (
+            {paginatedData.map((entry, idx) => (
               <tr key={entry.id} className={idx % 2 === 0 ? "bg-background" : "bg-muted/30"}>
                 <td className="border border-border px-2 py-2 sticky left-0 bg-inherit font-medium whitespace-nowrap">{formatDate(entry.date)}</td>
                 <td className="border border-border px-2 py-2 text-right tabular-nums">{entry.newly_printed?.toLocaleString() ?? "-"}</td>
@@ -240,8 +252,18 @@ export default function BricksPage() {
           </tbody>
         </table>
       </div>
+      {totalBrickPages > 1 && (
+        <div className="flex items-center justify-between px-4 py-2 border-t bg-muted/30">
+          <span className="text-xs text-muted-foreground">Page {currentPage} of {totalBrickPages}</span>
+          <div className="flex gap-1">
+            <Button variant="outline" size="sm" disabled={currentPage <= 1} onClick={() => setBrickPage({ ...brickPage, [year]: currentPage - 1 })}>Prev</Button>
+            <Button variant="outline" size="sm" disabled={currentPage >= totalBrickPages} onClick={() => setBrickPage({ ...brickPage, [year]: currentPage + 1 })}>Next</Button>
+          </div>
+        </div>
+      )}
     </div>
   );
+  };
 
   return (
     <div className="space-y-6">

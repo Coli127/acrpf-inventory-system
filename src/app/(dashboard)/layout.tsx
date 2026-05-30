@@ -64,17 +64,23 @@ function SidebarNav({
             href={item.href}
             onClick={onLinkClick}
             className={cn(
-              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
+              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 relative",
               isActive
-                ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
+                ? "bg-primary/10 text-primary font-semibold"
                 : "text-muted-foreground hover:text-foreground hover:bg-accent",
               collapsed && "justify-center px-2"
             )}
           >
+            {isActive && !collapsed && (
+              <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-r-full" />
+            )}
+            {isActive && collapsed && (
+              <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-r-full" />
+            )}
             <item.icon
               className={cn(
                 "h-4 w-4 shrink-0",
-                isActive && "text-primary-foreground"
+                isActive && "text-primary"
               )}
             />
             {!collapsed && <span>{item.name}</span>}

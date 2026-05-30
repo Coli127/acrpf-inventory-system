@@ -55,6 +55,8 @@ export default function SalesOrdersPage() {
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OrderRow & { items?: OrderItemRow[] } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
   const [form, setForm] = useState({ customer_id: "", quantity: "1", price: "0", notes: "" });
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
@@ -216,6 +218,9 @@ export default function SalesOrdersPage() {
     const matchStatus = filterStatus === "all" || o.status === filterStatus;
     return matchSearch && matchStatus;
   });
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);
+  useEffect(() => { setPage(1); }, [search, filterStatus]);
 
   return (
     <div className="space-y-6">
@@ -258,21 +263,21 @@ export default function SalesOrdersPage() {
                 <TableHead className="border border-border text-center font-bold sticky right-0 bg-muted/50 min-w-[100px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+                <TableBody>
               {loading ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center h-32 border border-border">
                     <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
                   </TableCell>
                 </TableRow>
-              ) : filtered.length === 0 ? (
+              ) : paginated.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center h-32 text-muted-foreground border border-border">
                     No orders found
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered.map((o, index) => (
+                paginated.map((o, index) => (
                   <TableRow key={o.id} className={index % 2 === 0 ? "bg-background" : "bg-muted/30"}>
                     <TableCell className="border border-border font-mono text-xs font-semibold">{o.order_number || o.id.slice(0, 8).toUpperCase()}</TableCell>
                     <TableCell className="border border-border font-medium">{o.customer?.name ?? "—"}</TableCell>
@@ -318,6 +323,15 @@ export default function SalesOrdersPage() {
             </TableBody>
           </Table>
         </div>
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t">
+            <span className="text-sm text-muted-foreground">Page {page} of {totalPages} ({filtered.length} total)</span>
+            <div className="flex gap-1">
+              <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>Prev</Button>
+              <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>Next</Button>
+            </div>
+          </div>
+        )}
       </CardContent></Card>
 
       {/* Create Order Dialog */}
