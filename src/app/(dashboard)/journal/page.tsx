@@ -38,6 +38,8 @@ export default function JournalPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
   const [saving, setSaving] = useState(false);
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
   const [form, setForm] = useState({
     date: new Date().toISOString().split("T")[0],
@@ -186,6 +188,9 @@ export default function JournalPage() {
     }
   };
 
+  const totalPages = Math.max(1, Math.ceil(entries.length / pageSize));
+  const paginated = entries.slice((page - 1) * pageSize, page * pageSize);
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -219,10 +224,11 @@ export default function JournalPage() {
 
           {expanded && (
             <div className="border-t overflow-x-auto bg-white dark:bg-zinc-950">
+              <div className="min-w-[1800px]">
               <Table className="border-collapse">
                 <TableHeader>
                   <TableRow className="bg-muted/50">
-                    <TableHead className="border border-border text-center font-bold sticky left-0 bg-muted/50 min-w-[120px]">Date</TableHead>
+                    <TableHead className="border border-border text-center font-bold sticky left-0 bg-muted/50 z-10 min-w-[120px]">Date</TableHead>
                     <TableHead className="border border-border text-center font-bold min-w-[130px]">Taguibo Clay (bags)</TableHead>
                     <TableHead className="border border-border text-center font-bold min-w-[140px]">Calapagan Clay (kg)</TableHead>
                     <TableHead className="border border-border text-center font-bold min-w-[130px]">Fine Sand (kg)</TableHead>
@@ -236,40 +242,40 @@ export default function JournalPage() {
                     <TableHead className="border border-border text-center font-bold min-w-[160px]">Target Soaked (kg)</TableHead>
                     <TableHead className="border border-border text-center font-bold min-w-[170px]">Target Prepared (kg)</TableHead>
                     <TableHead className="border border-border text-center font-bold min-w-[150px]">Remarks</TableHead>
-                    <TableHead className="border border-border text-center font-bold sticky right-0 bg-muted/50 min-w-[100px]">Actions</TableHead>
+                    <TableHead className="border border-border text-center font-bold sticky right-0 bg-muted/50 z-10 min-w-[100px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {loading ? (
                     <TableRow>
-                      <TableCell colSpan={16} className="text-center h-32 border border-border">
+                      <TableCell colSpan={15} className="text-center h-32 border border-border">
                         <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
                       </TableCell>
                     </TableRow>
-                  ) : entries.length === 0 ? (
+                  ) : paginated.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={16} className="text-center h-32 text-muted-foreground border border-border">
+                      <TableCell colSpan={15} className="text-center h-32 text-muted-foreground border border-border">
                         No journal entries found. Import from Excel file.
                       </TableCell>
                     </TableRow>
                   ) : (
-                    entries.map((entry, index) => (
+                    paginated.map((entry, index) => (
                       <TableRow key={entry.id} className={index % 2 === 0 ? "bg-background" : "bg-muted/30"}>
-                        <TableCell className="border border-border font-medium sticky left-0 bg-inherit">{formatDate(entry.date)}</TableCell>
-                        <TableCell className="border border-border text-right">{entry.available_taguibo_clay_bags?.toLocaleString() ?? "-"}</TableCell>
-                        <TableCell className="border border-border text-right">{entry.available_calapagan_clay_kg?.toLocaleString() ?? "-"}</TableCell>
-                        <TableCell className="border border-border text-right">{entry.available_fine_sand_kg?.toLocaleString() ?? "-"}</TableCell>
-                        <TableCell className="border border-border text-right">{entry.soaked_clay_for_day_kg?.toLocaleString() ?? "-"}</TableCell>
-                        <TableCell className="border border-border text-right">{entry.total_soaked_clay_mixture_kg?.toLocaleString() ?? "-"}</TableCell>
-                        <TableCell className="border border-border text-right">{entry.prepared_rtp_mix_for_day_kg?.toLocaleString() ?? "-"}</TableCell>
-                        <TableCell className="border border-border text-right">{entry.reclaimed_rtp_mix_kg?.toLocaleString() ?? "-"}</TableCell>
-                        <TableCell className="border border-border text-right">{entry.total_available_remaining_rtp_mix_kg?.toLocaleString() ?? "-"}</TableCell>
-                        <TableCell className="border border-border text-right">{entry.used_rtp_mix_kg?.toLocaleString() ?? "-"}</TableCell>
-                        <TableCell className="border border-border text-right">{entry.total_remaining_rtp_mix_kg?.toLocaleString() ?? "-"}</TableCell>
-                        <TableCell className="border border-border text-right">{entry.target_soaked_clay_mixture_kg?.toLocaleString() ?? "-"}</TableCell>
-                        <TableCell className="border border-border text-right">{entry.target_prepared_clay_mixture_kg?.toLocaleString() ?? "-"}</TableCell>
-                        <TableCell className="border border-border max-w-[200px] truncate text-sm">{entry.remarks || "-"}</TableCell>
-                        <TableCell className="border border-border sticky right-0 bg-inherit">
+                        <TableCell className="border border-border font-medium sticky left-0 bg-inherit z-10">{formatDate(entry.date)}</TableCell>
+                        <TableCell className="border border-border text-right tabular-nums">{entry.available_taguibo_clay_bags?.toLocaleString() ?? "-"}</TableCell>
+                        <TableCell className="border border-border text-right tabular-nums">{entry.available_calapagan_clay_kg?.toLocaleString() ?? "-"}</TableCell>
+                        <TableCell className="border border-border text-right tabular-nums">{entry.available_fine_sand_kg?.toLocaleString() ?? "-"}</TableCell>
+                        <TableCell className="border border-border text-right tabular-nums">{entry.soaked_clay_for_day_kg?.toLocaleString() ?? "-"}</TableCell>
+                        <TableCell className="border border-border text-right tabular-nums">{entry.total_soaked_clay_mixture_kg?.toLocaleString() ?? "-"}</TableCell>
+                        <TableCell className="border border-border text-right tabular-nums">{entry.prepared_rtp_mix_for_day_kg?.toLocaleString() ?? "-"}</TableCell>
+                        <TableCell className="border border-border text-right tabular-nums">{entry.reclaimed_rtp_mix_kg?.toLocaleString() ?? "-"}</TableCell>
+                        <TableCell className="border border-border text-right tabular-nums">{entry.total_available_remaining_rtp_mix_kg?.toLocaleString() ?? "-"}</TableCell>
+                        <TableCell className="border border-border text-right tabular-nums">{entry.used_rtp_mix_kg?.toLocaleString() ?? "-"}</TableCell>
+                        <TableCell className="border border-border text-right tabular-nums">{entry.total_remaining_rtp_mix_kg?.toLocaleString() ?? "-"}</TableCell>
+                        <TableCell className="border border-border text-right tabular-nums">{entry.target_soaked_clay_mixture_kg?.toLocaleString() ?? "-"}</TableCell>
+                        <TableCell className="border border-border text-right tabular-nums">{entry.target_prepared_clay_mixture_kg?.toLocaleString() ?? "-"}</TableCell>
+                        <TableCell className="border border-border text-sm min-w-[150px] max-w-[250px] truncate">{entry.remarks || "-"}</TableCell>
+                        <TableCell className="border border-border sticky right-0 bg-inherit z-10">
                           <div className="flex gap-1 justify-center">
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditDialog(entry)}>
                               <Pencil className="h-3.5 w-3.5" />
@@ -284,6 +290,16 @@ export default function JournalPage() {
                   )}
                 </TableBody>
               </Table>
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between px-4 py-3 border-t bg-muted/30">
+                  <span className="text-sm text-muted-foreground">Page {page} of {totalPages} ({entries.length} total)</span>
+                  <div className="flex gap-1">
+                    <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>Prev</Button>
+                    <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>Next</Button>
+                  </div>
+                </div>
+              )}
+              </div>
             </div>
           )}
         </CardContent>
