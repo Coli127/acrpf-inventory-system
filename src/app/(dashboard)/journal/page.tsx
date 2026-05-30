@@ -223,9 +223,8 @@ export default function JournalPage() {
           </button>
 
           {expanded && (
-            <div className="border-t overflow-x-auto bg-white dark:bg-zinc-950">
-              <div className="min-w-[1800px]">
-              <Table className="border-collapse">
+            <div className="border-t bg-white dark:bg-zinc-950">
+              <Table className="min-w-[1800px]">
                 <TableHeader>
                   <TableRow className="bg-muted/50">
                     <TableHead className="border border-border text-center font-bold sticky left-0 bg-muted/50 z-10 min-w-[120px]">Date</TableHead>
@@ -299,7 +298,6 @@ export default function JournalPage() {
                   </div>
                 </div>
               )}
-              </div>
             </div>
           )}
         </CardContent>
