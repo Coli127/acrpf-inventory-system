@@ -200,6 +200,56 @@ export default function JournalPage() {
   const totalPages = Math.max(1, Math.ceil(entries.length / pageSize));
   const paginated = entries.slice((page - 1) * pageSize, page * pageSize);
 
+  const renderRows = () => {
+    const rows: React.ReactNode[] = [];
+    paginated.forEach((entry, index) => {
+      rows.push(
+        <TableRow key={`row-${entry.id}`} className={index % 2 === 0 ? "bg-background" : "bg-muted/30"}>
+          <TableCell className="border border-border text-center p-1">
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => toggleRow(entry.id)}>
+              {expandedRows.has(entry.id) ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+            </Button>
+          </TableCell>
+          <TableCell className="border border-border font-medium whitespace-nowrap text-sm">{formatDate(entry.date)}</TableCell>
+          <TableCell className="border border-border text-right tabular-nums text-sm">{entry.available_taguibo_clay_bags?.toLocaleString() ?? "-"}</TableCell>
+          <TableCell className="border border-border text-right tabular-nums text-sm">{entry.available_calapagan_clay_kg?.toLocaleString() ?? "-"}</TableCell>
+          <TableCell className="border border-border text-right tabular-nums text-sm">{entry.available_fine_sand_kg?.toLocaleString() ?? "-"}</TableCell>
+          <TableCell className="border border-border text-right tabular-nums text-sm">{entry.total_soaked_clay_mixture_kg?.toLocaleString() ?? "-"}</TableCell>
+          <TableCell className="border border-border text-right tabular-nums text-sm">{entry.used_rtp_mix_kg?.toLocaleString() ?? "-"}</TableCell>
+          <TableCell className="border border-border text-right tabular-nums text-sm">{entry.total_remaining_rtp_mix_kg?.toLocaleString() ?? "-"}</TableCell>
+          <TableCell className="border border-border text-sm max-w-[120px] truncate">{entry.remarks || "-"}</TableCell>
+          <TableCell className="border border-border text-center">
+            <div className="flex gap-0.5 justify-center">
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditDialog(entry)}>
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(entry.id)}>
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </TableCell>
+        </TableRow>,
+      );
+      if (expandedRows.has(entry.id)) {
+        rows.push(
+          <TableRow key={`detail-${entry.id}`} className="bg-muted/20">
+            <TableCell colSpan={10} className="border border-border p-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 text-sm">
+                <div><span className="text-muted-foreground text-xs">Soaked for Day</span><p className="font-medium tabular-nums">{entry.soaked_clay_for_day_kg?.toLocaleString() ?? "-"} kg</p></div>
+                <div><span className="text-muted-foreground text-xs">RTP Mix</span><p className="font-medium tabular-nums">{entry.prepared_rtp_mix_for_day_kg?.toLocaleString() ?? "-"} kg</p></div>
+                <div><span className="text-muted-foreground text-xs">Reclaimed</span><p className="font-medium tabular-nums">{entry.reclaimed_rtp_mix_kg?.toLocaleString() ?? "-"} kg</p></div>
+                <div><span className="text-muted-foreground text-xs">Avail Remaining</span><p className="font-medium tabular-nums">{entry.total_available_remaining_rtp_mix_kg?.toLocaleString() ?? "-"} kg</p></div>
+                <div><span className="text-muted-foreground text-xs">Target Soaked</span><p className="font-medium tabular-nums">{entry.target_soaked_clay_mixture_kg?.toLocaleString() ?? "-"} kg</p></div>
+                <div><span className="text-muted-foreground text-xs">Target Prepared</span><p className="font-medium tabular-nums">{entry.target_prepared_clay_mixture_kg?.toLocaleString() ?? "-"} kg</p></div>
+              </div>
+            </TableCell>
+          </TableRow>,
+        );
+      }
+    });
+    return rows;
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -262,49 +312,10 @@ export default function JournalPage() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    paginated.map((entry, index) => (
-                      <TableRow key={entry.id} className={index % 2 === 0 ? "bg-background" : "bg-muted/30"}>
-                        <TableCell className="border border-border text-center p-1">
-                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => toggleRow(entry.id)}>
-                            {expandedRows.has(entry.id) ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-                          </Button>
-                        </TableCell>
-                        <TableCell className="border border-border font-medium whitespace-nowrap text-sm">{formatDate(entry.date)}</TableCell>
-                        <TableCell className="border border-border text-right tabular-nums text-sm">{entry.available_taguibo_clay_bags?.toLocaleString() ?? "-"}</TableCell>
-                        <TableCell className="border border-border text-right tabular-nums text-sm">{entry.available_calapagan_clay_kg?.toLocaleString() ?? "-"}</TableCell>
-                        <TableCell className="border border-border text-right tabular-nums text-sm">{entry.available_fine_sand_kg?.toLocaleString() ?? "-"}</TableCell>
-                        <TableCell className="border border-border text-right tabular-nums text-sm">{entry.total_soaked_clay_mixture_kg?.toLocaleString() ?? "-"}</TableCell>
-                        <TableCell className="border border-border text-right tabular-nums text-sm">{entry.used_rtp_mix_kg?.toLocaleString() ?? "-"}</TableCell>
-                        <TableCell className="border border-border text-right tabular-nums text-sm">{entry.total_remaining_rtp_mix_kg?.toLocaleString() ?? "-"}</TableCell>
-                        <TableCell className="border border-border text-sm max-w-[120px] truncate">{entry.remarks || "-"}</TableCell>
-                        <TableCell className="border border-border text-center">
-                          <div className="flex gap-0.5 justify-center">
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditDialog(entry)}>
-                              <Pencil className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(entry.id)}>
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
+                    renderRows()
                   )}
                 </TableBody>
               </Table>
-              {/* Expanded detail rows */}
-              {paginated.filter(e => expandedRows.has(e.id)).map((entry) => (
-                <div key={`detail-${entry.id}`} className="border-t bg-muted/20 px-4 py-3 text-sm">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                    <div><span className="text-muted-foreground text-xs">Soaked for Day</span><p className="font-medium tabular-nums">{entry.soaked_clay_for_day_kg?.toLocaleString() ?? "-"} kg</p></div>
-                    <div><span className="text-muted-foreground text-xs">RTP Mix</span><p className="font-medium tabular-nums">{entry.prepared_rtp_mix_for_day_kg?.toLocaleString() ?? "-"} kg</p></div>
-                    <div><span className="text-muted-foreground text-xs">Reclaimed</span><p className="font-medium tabular-nums">{entry.reclaimed_rtp_mix_kg?.toLocaleString() ?? "-"} kg</p></div>
-                    <div><span className="text-muted-foreground text-xs">Avail Remaining</span><p className="font-medium tabular-nums">{entry.total_available_remaining_rtp_mix_kg?.toLocaleString() ?? "-"} kg</p></div>
-                    <div><span className="text-muted-foreground text-xs">Target Soaked</span><p className="font-medium tabular-nums">{entry.target_soaked_clay_mixture_kg?.toLocaleString() ?? "-"} kg</p></div>
-                    <div><span className="text-muted-foreground text-xs">Target Prepared</span><p className="font-medium tabular-nums">{entry.target_prepared_clay_mixture_kg?.toLocaleString() ?? "-"} kg</p></div>
-                  </div>
-                </div>
-              ))}
               {totalPages > 1 && (
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-2 px-4 py-3 border-t">
                   <span className="text-sm text-muted-foreground">Page {page} of {totalPages} ({entries.length} total)</span>

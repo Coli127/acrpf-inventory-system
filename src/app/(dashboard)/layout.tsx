@@ -26,7 +26,6 @@ import {
   CalendarCheck,
   ShoppingCart,
   Users,
-  Calendar,
   Contact,
 } from "lucide-react";
 import type { Profile, Notification } from "@/lib/types";
@@ -38,7 +37,6 @@ const navigation = [
   { name: "Bricks", href: "/bricks", icon: Grid3X3 },
   { name: "Daily Journal", href: "/journal", icon: BookOpen },
   { name: "Schedule", href: "/schedule", icon: CalendarCheck },
-  { name: "Import Schedule", href: "/import-schedule", icon: Calendar },
   { name: "Users", href: "/users", icon: Users },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
@@ -100,11 +98,11 @@ export default function DashboardLayout({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [dateString] = useState(() =>
-    typeof window !== "undefined"
-      ? new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
-      : ""
-  );
+  const [dateString, setDateString] = useState("");
+
+  useEffect(() => {
+    setDateString(new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }));
+  }, []);
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();

@@ -1,16 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { PageHeader } from "@/components/page-header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Package, Upload, ChevronDown, ChevronRight, Trash2, Plus, Pencil } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Loader2,
+  Package,
+  Upload,
+  Trash2,
+  Plus,
+  Pencil,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Download,
+  Search,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 
@@ -30,20 +49,99 @@ interface BricksEntry {
   overall_total: number | null;
   remarks: string | null;
   deficit: number | null;
+  highlight_color: string | null;
+}
+
+type SortColumn =
+  | "date"
+  | "newly_printed"
+  | "bricks_in_kiln"
+  | "reclaimed_newly_printed"
+  | "reclaimed_air_dried"
+  | "deployed_delivered"
+  | "bricks_with_cracks"
+  | "total_air_dried"
+  | "actual_count"
+  | "total_fired"
+  | "overall_total"
+  | "deficit";
+
+const COLOR_OPTIONS = [
+  { label: "None", value: "" },
+  { label: "Yellow", value: "#fef9c3" },
+  { label: "Green", value: "#bbf7d0" },
+  { label: "Blue", value: "#bfdbfe" },
+  { label: "Red", value: "#fecaca" },
+  { label: "Orange", value: "#fed7aa" },
+  { label: "Purple", value: "#e9d5ff" },
+  { label: "Pink", value: "#fce7f3" },
+  { label: "Cyan", value: "#cffafe" },
+];
+
+const MONTHS = [
+  { value: "", label: "All Months" },
+  { value: "0", label: "January" },
+  { value: "1", label: "February" },
+  { value: "2", label: "March" },
+  { value: "3", label: "April" },
+  { value: "4", label: "May" },
+  { value: "5", label: "June" },
+  { value: "6", label: "July" },
+  { value: "7", label: "August" },
+  { value: "8", label: "September" },
+  { value: "9", label: "October" },
+  { value: "10", label: "November" },
+  { value: "11", label: "December" },
+];
+
+function parseDate(dateStr: string): Date | null {
+  if (!dateStr) return null;
+  if (/^\d+$/.test(dateStr)) {
+    const num = parseInt(dateStr);
+    if (num > 30000) return new Date((num - 25569) * 86400 * 1000);
+    return null;
+  }
+  const d = new Date(dateStr);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function formatDate(dateStr: string): string {
+  const d = parseDate(dateStr);
+  if (!d) return dateStr || "-";
+  return d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+}
+
+function getMonth(dateStr: string): number | null {
+  const d = parseDate(dateStr);
+  return d ? d.getMonth() : null;
+}
+
+function getEntryYear(dateStr: string, entryYear: number | null): number | null {
+  if (entryYear) return entryYear;
+  const d = parseDate(dateStr);
+  return d ? d.getFullYear() : null;
 }
 
 export default function BricksPage() {
+  const supabase = createClient();
+
   const [entries, setEntries] = useState<BricksEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expanded2025, setExpanded2025] = useState(false);
-  const [expanded2026, setExpanded2026] = useState(false);
-  const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [editingEntry, setEditingEntry] = useState<BricksEntry | null>(null);
-  const [addYear, setAddYear] = useState<number>(2026);
-  const [saving, setSaving] = useState(false);
-  const [brickPage, setBrickPage] = useState<Record<number, number>>({ 2025: 1, 2026: 1 });
+
+  const [filterYear, setFilterYear] = useState<string>("");
+  const [filterMonth, setFilterMonth] = useState<string>("");
+  const [filterDate, setFilterDate] = useState<string>("");
+  const [search, setSearch] = useState("");
+
+  const [sortColumn, setSortColumn] = useState<SortColumn>("date");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+  const [page, setPage] = useState(1);
   const pageSize = 10;
 
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<BricksEntry | null>(null);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     date: new Date().toISOString().split("T")[0],
     newly_printed: "",
@@ -58,48 +156,135 @@ export default function BricksPage() {
     overall_total: "",
     remarks: "",
     deficit: "",
+    highlight_color: "",
   });
-
-  const supabase = createClient();
-
-  const formatDate = (dateStr: string | null | undefined): string => {
-    if (!dateStr) return "-";
-    if (/^\d+$/.test(dateStr)) {
-      const num = parseInt(dateStr);
-      if (num > 30000) {
-        const date = new Date((num - 25569) * 86400 * 1000);
-        return date.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
-      }
-      return dateStr;
-    }
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return dateStr;
-    return date.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
-  };
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase.from("bricks_inventory").select("*").order("date", { ascending: false });
+      const { data, error } = await supabase
+        .from("bricks_inventory")
+        .select("*")
+        .order("date", { ascending: false });
       if (error) throw error;
       if (data) setEntries(data as unknown as BricksEntry[]);
     } catch (error) {
       console.error("Fetch error:", error);
-    } finally { setLoading(false); }
+      toast.error("Failed to load data");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { fetchData(); }, [supabase]);
+  useEffect(() => { fetchData(); }, []);
 
-  const data2025 = entries.filter((e) => e.year === 2025);
-  const data2026 = entries.filter((e) => e.year === 2026);
-  const total2025 = data2025.reduce((sum, e) => sum + (e.overall_total || 0), 0);
-  const total2026 = data2026.reduce((sum, e) => sum + (e.overall_total || 0), 0);
+  const availableYears = useMemo(() => {
+    const years = new Set<number>();
+    entries.forEach((e) => {
+      const y = getEntryYear(e.date, e.year);
+      if (y) years.add(y);
+    });
+    return Array.from(years).sort((a, b) => b - a);
+  }, [entries]);
 
-  const openAddDialog = (year: number) => {
-    setAddYear(year);
+  const processed = useMemo(() => {
+    let result = [...entries];
+
+    if (filterYear) {
+      const y = parseInt(filterYear);
+      result = result.filter((e) => getEntryYear(e.date, e.year) === y);
+    }
+    if (filterMonth) {
+      const m = parseInt(filterMonth);
+      result = result.filter((e) => getMonth(e.date) === m);
+    }
+    if (filterDate) {
+      result = result.filter((e) => {
+        const d = parseDate(e.date);
+        if (!d) return false;
+        const fd = new Date(filterDate);
+        return d.getFullYear() === fd.getFullYear() && d.getMonth() === fd.getMonth() && d.getDate() === fd.getDate();
+      });
+    }
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter((e) => {
+        const remarks = (e.remarks || "").toLowerCase();
+        const dateStr = formatDate(e.date).toLowerCase();
+        return remarks.includes(q) || dateStr.includes(q);
+      });
+    }
+
+    result.sort((a, b) => {
+      if (sortColumn === "date") {
+        const da = parseDate(a.date);
+        const db = parseDate(b.date);
+        if (da && db) return sortDir === "asc" ? da.getTime() - db.getTime() : db.getTime() - da.getTime();
+        if (da) return sortDir === "asc" ? -1 : 1;
+        if (db) return sortDir === "asc" ? 1 : -1;
+        return 0;
+      }
+      const va = a[sortColumn] ?? 0;
+      const vb = b[sortColumn] ?? 0;
+      return sortDir === "asc" ? va - vb : vb - va;
+    });
+
+    return result;
+  }, [entries, filterYear, filterMonth, filterDate, search, sortColumn, sortDir]);
+
+  const totalPages = Math.max(1, Math.ceil(processed.length / pageSize));
+  const paginatedData = processed.slice((page - 1) * pageSize, page * pageSize);
+
+  useEffect(() => { setPage(1); }, [filterYear, filterMonth, filterDate, search]);
+
+  const filteredTotal = processed.reduce((sum, e) => sum + (e.overall_total || 0), 0);
+  const grandTotal = entries.reduce((sum, e) => sum + (e.overall_total || 0), 0);
+
+  const handleSort = (col: SortColumn) => {
+    if (col === sortColumn) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortColumn(col); setSortDir("desc"); }
+  };
+
+  const SortIcon = ({ col }: { col: SortColumn }) => {
+    if (col !== sortColumn) return <ArrowUpDown className="h-3 w-3 ml-1 inline opacity-40" />;
+    return sortDir === "asc" ? <ArrowUp className="h-3 w-3 ml-1 inline" /> : <ArrowDown className="h-3 w-3 ml-1 inline" />;
+  };
+
+  const exportCSV = () => {
+    const headers = [
+      "Date", "Newly Printed", "In Kiln", "Reclaimed (NP)", "Reclaimed (AD)",
+      "Deployed", "Cracks", "Total AD", "Actual Count", "Fired",
+      "Total", "Deficit", "Remarks",
+    ];
+    const rows = processed.map((e) => [
+      formatDate(e.date),
+      e.newly_printed ?? "",
+      e.bricks_in_kiln ?? "",
+      e.reclaimed_newly_printed ?? "",
+      e.reclaimed_air_dried ?? "",
+      e.deployed_delivered ?? "",
+      e.bricks_with_cracks ?? "",
+      e.total_air_dried ?? "",
+      e.actual_count ?? "",
+      e.total_fired ?? "",
+      e.overall_total ?? "",
+      e.deficit ?? "",
+      `"${(e.remarks || "").replace(/"/g, '""')}"`,
+    ]);
+    const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `bricks-inventory-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const openAddDialog = () => {
     setEditingEntry(null);
     setForm({
-      date: `${year}-${new Date().toISOString().slice(5, 10)}`,
+      date: new Date().toISOString().split("T")[0],
       newly_printed: "",
       bricks_in_kiln: "",
       reclaimed_newly_printed: "",
@@ -112,15 +297,21 @@ export default function BricksPage() {
       overall_total: "",
       remarks: "",
       deficit: "",
+      highlight_color: "",
     });
     setAddDialogOpen(true);
   };
 
   const openEditDialog = (entry: BricksEntry) => {
     setEditingEntry(entry);
-    setAddYear(entry.year || 2026);
+    const num = Number(entry.date);
+    const dateStr = entry.date?.includes("-")
+      ? entry.date
+      : !isNaN(num)
+        ? new Date((num - 25569) * 86400 * 1000).toISOString().split("T")[0]
+        : new Date().toISOString().split("T")[0];
     setForm({
-      date: entry.date.includes("-") ? entry.date : new Date((parseInt(entry.date) - 25569) * 86400 * 1000).toISOString().split("T")[0],
+      date: dateStr,
       newly_printed: entry.newly_printed?.toString() || "",
       bricks_in_kiln: entry.bricks_in_kiln?.toString() || "",
       reclaimed_newly_printed: entry.reclaimed_newly_printed?.toString() || "",
@@ -133,6 +324,7 @@ export default function BricksPage() {
       overall_total: entry.overall_total?.toString() || "",
       remarks: entry.remarks || "",
       deficit: entry.deficit?.toString() || "",
+      highlight_color: entry.highlight_color || "",
     });
     setAddDialogOpen(true);
   };
@@ -141,9 +333,11 @@ export default function BricksPage() {
     if (!form.date) { toast.error("Date is required"); return; }
     setSaving(true);
     try {
+      const parsedDate = parseDate(form.date);
+      const year = parsedDate ? parsedDate.getFullYear() : new Date().getFullYear();
       const payload = {
         date: form.date,
-        year: addYear,
+        year,
         newly_printed: parseInt(form.newly_printed) || 0,
         bricks_in_kiln: parseInt(form.bricks_in_kiln) || 0,
         reclaimed_newly_printed: parseInt(form.reclaimed_newly_printed) || 0,
@@ -156,8 +350,8 @@ export default function BricksPage() {
         overall_total: parseInt(form.overall_total) || 0,
         remarks: form.remarks || null,
         deficit: parseInt(form.deficit) || null,
+        highlight_color: form.highlight_color || null,
       };
-
       if (editingEntry) {
         const { error } = await supabase.from("bricks_inventory").update(payload).eq("id", editingEntry.id);
         if (error) throw error;
@@ -169,8 +363,9 @@ export default function BricksPage() {
       }
       setAddDialogOpen(false);
       fetchData();
-    } catch (error: unknown) { toast.error(error instanceof Error ? error.message : "An unexpected error occurred"); }
-    finally { setSaving(false); }
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to save entry");
+    } finally { setSaving(false); }
   };
 
   const handleDelete = async (id: string) => {
@@ -180,152 +375,177 @@ export default function BricksPage() {
       if (error) throw error;
       toast.success("Entry deleted!");
       fetchData();
-    } catch (error: unknown) { toast.error(error instanceof Error ? error.message : "An unexpected error occurred"); }
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete entry");
+    }
   };
 
-  const renderTable = (data: BricksEntry[], year: number) => {
-    const currentPage = brickPage[year] || 1;
-    const totalBrickPages = Math.max(1, Math.ceil(data.length / pageSize));
-    const paginatedData = data.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-
-    return (
-    <div className="overflow-x-auto bg-white dark:bg-zinc-950 border rounded-lg">
-      <div className="px-4 py-2 border-b flex items-center justify-between bg-muted/30">
-        <span className="text-sm text-muted-foreground">{data.length} entries</span>
-        <div className="flex items-center gap-2">
-          {totalBrickPages > 1 && (
-            <span className="text-xs text-muted-foreground">Page {currentPage} of {totalBrickPages}</span>
-          )}
-          <Button size="sm" onClick={() => openAddDialog(year)} className="gap-2">
-            <Plus className="h-4 w-4" />Add Entry
-          </Button>
-        </div>
-      </div>
-      <div className="min-w-[1400px]">
-        <table className="w-full border-collapse text-xs">
-          <thead>
-            <tr className="bg-muted/50">
-              <th className="border border-border px-2 py-2.5 text-center font-bold sticky left-0 bg-muted/50 min-w-[100px]">Date</th>
-              <th className="border border-border px-2 py-2.5 text-center font-bold min-w-[90px]">Newly Printed</th>
-              <th className="border border-border px-2 py-2.5 text-center font-bold min-w-[80px]">In Kiln</th>
-              <th className="border border-border px-2 py-2.5 text-center font-bold min-w-[105px]">Reclaimed (NP)</th>
-              <th className="border border-border px-2 py-2.5 text-center font-bold min-w-[100px]">Reclaimed (AD)</th>
-              <th className="border border-border px-2 py-2.5 text-center font-bold min-w-[90px]">Deployed</th>
-              <th className="border border-border px-2 py-2.5 text-center font-bold min-w-[95px]">Bricks w/ Cracks</th>
-              <th className="border border-border px-2 py-2.5 text-center font-bold min-w-[85px]">Total AD</th>
-              <th className="border border-border px-2 py-2.5 text-center font-bold min-w-[80px]">Actual Count</th>
-              <th className="border border-border px-2 py-2.5 text-center font-bold min-w-[75px]">Fired</th>
-              <th className="border border-border px-2 py-2.5 text-center font-bold min-w-[80px]">Total</th>
-              <th className="border border-border px-2 py-2.5 text-center font-bold min-w-[70px]">Deficit</th>
-              <th className="border border-border px-2 py-2.5 text-center font-bold min-w-[200px]">Remarks</th>
-              <th className="border border-border px-2 py-2.5 text-center font-bold sticky right-0 bg-muted/50 min-w-[80px]">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paginatedData.map((entry, idx) => (
-              <tr key={entry.id} className={idx % 2 === 0 ? "bg-background" : "bg-muted/30"}>
-                <td className="border border-border px-2 py-2 sticky left-0 bg-inherit font-medium whitespace-nowrap">{formatDate(entry.date)}</td>
-                <td className="border border-border px-2 py-2 text-right tabular-nums">{entry.newly_printed?.toLocaleString() ?? "-"}</td>
-                <td className="border border-border px-2 py-2 text-right tabular-nums">{entry.bricks_in_kiln?.toLocaleString() ?? "-"}</td>
-                <td className="border border-border px-2 py-2 text-right tabular-nums">{entry.reclaimed_newly_printed?.toLocaleString() ?? "-"}</td>
-                <td className="border border-border px-2 py-2 text-right tabular-nums">{entry.reclaimed_air_dried?.toLocaleString() ?? "-"}</td>
-                <td className="border border-border px-2 py-2 text-right tabular-nums">{entry.deployed_delivered?.toLocaleString() ?? "-"}</td>
-                <td className="border border-border px-2 py-2 text-right tabular-nums">{entry.bricks_with_cracks?.toLocaleString() ?? "-"}</td>
-                <td className="border border-border px-2 py-2 text-right tabular-nums">{entry.total_air_dried?.toLocaleString() ?? "-"}</td>
-                <td className="border border-border px-2 py-2 text-right tabular-nums">{entry.actual_count?.toLocaleString() ?? "-"}</td>
-                <td className="border border-border px-2 py-2 text-right tabular-nums">{entry.total_fired?.toLocaleString() ?? "-"}</td>
-                <td className="border border-border px-2 py-2 text-right tabular-nums font-semibold">{entry.overall_total?.toLocaleString() ?? "-"}</td>
-                <td className="border border-border px-2 py-2 text-right tabular-nums text-red-500">{entry.deficit?.toLocaleString() ?? "-"}</td>
-                <td className="border border-border px-2 py-2 text-sm min-w-[200px] max-w-[300px] truncate">{entry.remarks || "-"}</td>
-                <td className="border border-border px-2 py-2 sticky right-0 bg-inherit">
-                  <div className="flex gap-1 justify-center">
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditDialog(entry)}>
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(entry.id)}>
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      {totalBrickPages > 1 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 px-4 py-3 border-t">
-          <span className="text-sm text-muted-foreground">Page {currentPage} of {totalBrickPages}</span>
-          <div className="flex gap-1">
-            <Button variant="outline" size="sm" disabled={currentPage <= 1} onClick={() => setBrickPage({ ...brickPage, [year]: currentPage - 1 })}>Prev</Button>
-            <Button variant="outline" size="sm" disabled={currentPage >= totalBrickPages} onClick={() => setBrickPage({ ...brickPage, [year]: currentPage + 1 })}>Next</Button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-  };
+  const sortableColumns: { key: SortColumn; label: string }[] = [
+    { key: "date", label: "Date" },
+    { key: "newly_printed", label: "Newly Printed" },
+    { key: "bricks_in_kiln", label: "In Kiln" },
+    { key: "reclaimed_newly_printed", label: "Reclaimed (NP)" },
+    { key: "reclaimed_air_dried", label: "Reclaimed (AD)" },
+    { key: "deployed_delivered", label: "Deployed" },
+    { key: "bricks_with_cracks", label: "Cracks" },
+    { key: "total_air_dried", label: "Total AD" },
+    { key: "actual_count", label: "Actual Count" },
+    { key: "total_fired", label: "Fired" },
+    { key: "overall_total", label: "Total" },
+    { key: "deficit", label: "Deficit" },
+  ];
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Bricks Inventory" description={`${entries.length} total records`} icon={Package}>
-        <Link href="/import-bricks">
-          <Button variant="outline" className="gap-2"><Upload className="h-4 w-4" />Import Excel</Button>
-        </Link>
+      <PageHeader title="Bricks Inventory" description={`${processed.length} record${processed.length !== 1 ? "s" : ""}`} icon={Package}>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={exportCSV} className="gap-2">
+            <Download className="h-4 w-4" />Export
+          </Button>
+          <Link href="/import-bricks">
+            <Button variant="outline" className="gap-2">
+              <Upload className="h-4 w-4" />Import Excel
+            </Button>
+          </Link>
+        </div>
       </PageHeader>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Card><CardContent className="p-4">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center"><Package className="h-5 w-5 text-amber-500" /></div>
-            <div><p className="text-xs text-muted-foreground">2025 Total</p><p className="text-xl font-bold">{total2025.toLocaleString()}</p></div>
+            <div><p className="text-xs text-muted-foreground">Filtered Entries</p><p className="text-xl font-bold">{processed.length.toLocaleString()}</p></div>
           </div>
         </CardContent></Card>
         <Card><CardContent className="p-4">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center"><Package className="h-5 w-5 text-emerald-500" /></div>
-            <div><p className="text-xs text-muted-foreground">2026 Total</p><p className="text-xl font-bold">{total2026.toLocaleString()}</p></div>
+            <div><p className="text-xs text-muted-foreground">Filtered Total</p><p className="text-xl font-bold">{filteredTotal.toLocaleString()}</p></div>
           </div>
         </CardContent></Card>
         <Card><CardContent className="p-4">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-blue-500/10 flex items-center justify-center"><Package className="h-5 w-5 text-blue-500" /></div>
-            <div><p className="text-xs text-muted-foreground">Grand Total</p><p className="text-xl font-bold">{(total2025 + total2026).toLocaleString()}</p></div>
+            <div><p className="text-xs text-muted-foreground">Grand Total</p><p className="text-xl font-bold">{grandTotal.toLocaleString()}</p></div>
           </div>
         </CardContent></Card>
       </div>
 
+      <Card><CardContent className="p-4">
+        <div className="flex flex-wrap gap-3 items-end">
+          <div className="space-y-1.5 min-w-[120px]">
+            <Label className="text-xs">Year</Label>
+            <Select value={filterYear} onValueChange={(v) => setFilterYear(v ?? "")}>
+              <SelectTrigger className="h-9">
+                <SelectValue placeholder="All Years" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All Years</SelectItem>
+                {availableYears.map((y) => (
+                  <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5 min-w-[130px]">
+            <Label className="text-xs">Month</Label>
+            <Select value={filterMonth} onValueChange={(v) => setFilterMonth(v ?? "")}>
+              <SelectTrigger className="h-9">
+                <SelectValue placeholder="All Months" />
+              </SelectTrigger>
+              <SelectContent>
+                {MONTHS.map((m) => (
+                  <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5 min-w-[140px]">
+            <Label className="text-xs">Date</Label>
+            <Input type="date" className="h-9" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
+          </div>
+          <div className="space-y-1.5 min-w-[180px] flex-1">
+            <Label className="text-xs">Search</Label>
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input className="h-9 pl-8" placeholder="Search remarks or date..." value={search} onChange={(e) => setSearch(e.target.value)} />
+              {search && (
+                <button className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setSearch("")}>
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
+          <Button size="sm" onClick={openAddDialog} className="gap-2 h-9"><Plus className="h-4 w-4" />Add Entry</Button>
+        </div>
+      </CardContent></Card>
+
       {loading ? (
         <Card><CardContent className="p-0"><div className="flex h-32 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div></CardContent></Card>
+      ) : processed.length === 0 ? (
+        <Card><CardContent className="p-0"><div className="flex h-32 items-center justify-center text-muted-foreground">No records found</div></CardContent></Card>
       ) : (
-        <div className="space-y-4">
-          <Card><CardContent className="p-0">
-            <button className="w-full px-6 py-4 flex items-center justify-between hover:bg-accent/50 transition-colors" onClick={() => setExpanded2026(!expanded2026)}>
-              <div className="flex items-center gap-3">
-                <div className="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center"><Package className="h-4 w-4 text-emerald-500" /></div>
-                <div className="text-left"><h3 className="font-semibold">2026 Records</h3><p className="text-sm text-muted-foreground">{data2026.length} entries • {total2026.toLocaleString()} total bricks</p></div>
+        <div className="bg-white dark:bg-zinc-950 border rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-xs">
+              <thead>
+                <tr className="bg-muted/50">
+                  {sortableColumns.map((col) => (
+                    <th
+                      key={col.key}
+                      className={`border border-border px-2 py-2.5 text-center font-bold whitespace-nowrap cursor-pointer select-none hover:bg-muted/70 transition-colors min-w-[80px] ${col.key === "date" ? "sticky left-0 bg-muted/50 min-w-[110px]" : ""}`}
+                      onClick={() => handleSort(col.key)}
+                    >
+                      {col.label}<SortIcon col={col.key} />
+                    </th>
+                  ))}
+                  <th className="border border-border px-2 py-2.5 text-center font-bold min-w-[180px]">Remarks</th>
+                  <th className="border border-border px-2 py-2.5 text-center font-bold sticky right-0 bg-muted/50 min-w-[80px]">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedData.map((entry, idx) => (
+                  <tr key={entry.id} className={`${idx % 2 === 0 ? "bg-background" : "bg-muted/30"} hover:bg-primary/5 transition-colors`}
+                    style={entry.highlight_color ? { backgroundColor: entry.highlight_color } : {}}>
+                    <td className="border border-border px-2 py-2 sticky left-0 bg-inherit font-medium whitespace-nowrap">{formatDate(entry.date)}</td>
+                    <td className="border border-border px-2 py-2 text-right tabular-nums">{entry.newly_printed?.toLocaleString() ?? "-"}</td>
+                    <td className="border border-border px-2 py-2 text-right tabular-nums">{entry.bricks_in_kiln?.toLocaleString() ?? "-"}</td>
+                    <td className="border border-border px-2 py-2 text-right tabular-nums">{entry.reclaimed_newly_printed?.toLocaleString() ?? "-"}</td>
+                    <td className="border border-border px-2 py-2 text-right tabular-nums">{entry.reclaimed_air_dried?.toLocaleString() ?? "-"}</td>
+                    <td className="border border-border px-2 py-2 text-right tabular-nums">{entry.deployed_delivered?.toLocaleString() ?? "-"}</td>
+                    <td className="border border-border px-2 py-2 text-right tabular-nums">{entry.bricks_with_cracks?.toLocaleString() ?? "-"}</td>
+                    <td className="border border-border px-2 py-2 text-right tabular-nums">{entry.total_air_dried?.toLocaleString() ?? "-"}</td>
+                    <td className="border border-border px-2 py-2 text-right tabular-nums">{entry.actual_count?.toLocaleString() ?? "-"}</td>
+                    <td className="border border-border px-2 py-2 text-right tabular-nums">{entry.total_fired?.toLocaleString() ?? "-"}</td>
+                    <td className="border border-border px-2 py-2 text-right tabular-nums font-semibold">{entry.overall_total?.toLocaleString() ?? "-"}</td>
+                    <td className="border border-border px-2 py-2 text-right tabular-nums text-red-500">{entry.deficit?.toLocaleString() ?? "-"}</td>
+                    <td className="border border-border px-2 py-2 text-sm max-w-[200px] truncate" title={entry.remarks || ""}>{entry.remarks || "-"}</td>
+                    <td className="border border-border px-2 py-2 sticky right-0 bg-inherit">
+                      <div className="flex gap-1 justify-center">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditDialog(entry)}><Pencil className="h-3.5 w-3.5" /></Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(entry.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-2 px-4 py-3 border-t">
+              <span className="text-sm text-muted-foreground">Page {page} of {totalPages} ({processed.length} total)</span>
+              <div className="flex gap-1">
+                <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>Prev</Button>
+                <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>Next</Button>
               </div>
-              {expanded2026 ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-            </button>
-            {expanded2026 && (data2026.length === 0 ? <div className="p-6 text-center text-muted-foreground">No 2026 records found</div> : renderTable(data2026, 2026))}
-          </CardContent></Card>
-
-          <Card><CardContent className="p-0">
-            <button className="w-full px-6 py-4 flex items-center justify-between hover:bg-accent/50 transition-colors" onClick={() => setExpanded2025(!expanded2025)}>
-              <div className="flex items-center gap-3">
-                <div className="h-8 w-8 rounded-lg bg-amber-500/10 flex items-center justify-center"><Package className="h-4 w-4 text-amber-500" /></div>
-                <div className="text-left"><h3 className="font-semibold">2025 Records</h3><p className="text-sm text-muted-foreground">{data2025.length} entries • {total2025.toLocaleString()} total bricks</p></div>
-              </div>
-              {expanded2025 ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-            </button>
-            {expanded2025 && (data2025.length === 0 ? <div className="p-6 text-center text-muted-foreground">No 2025 records found</div> : renderTable(data2025, 2025))}
-          </CardContent></Card>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Add/Edit Dialog */}
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
         <DialogContent className="max-w-4xl">
-          <DialogHeader><DialogTitle>{editingEntry ? "Edit Entry" : `Add ${addYear} Entry`}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editingEntry ? "Edit Entry" : "Add Entry"}</DialogTitle></DialogHeader>
           <div className="grid grid-cols-3 gap-4 py-4">
             <div className="col-span-3 space-y-2"><Label>Date *</Label><Input type="date" value={form.date} onChange={(e) => setForm({...form, date: e.target.value})} /></div>
             <div className="space-y-2"><Label>Newly Printed</Label><Input type="number" value={form.newly_printed} onChange={(e) => setForm({...form, newly_printed: e.target.value})} /></div>
@@ -340,6 +560,17 @@ export default function BricksPage() {
             <div className="space-y-2"><Label>Overall Total</Label><Input type="number" value={form.overall_total} onChange={(e) => setForm({...form, overall_total: e.target.value})} /></div>
             <div className="space-y-2"><Label>Deficit</Label><Input type="number" value={form.deficit} onChange={(e) => setForm({...form, deficit: e.target.value})} /></div>
             <div className="col-span-3 space-y-2"><Label>Remarks</Label><Textarea value={form.remarks} onChange={(e) => setForm({...form, remarks: e.target.value})} rows={2} /></div>
+            <div className="col-span-3 space-y-2"><Label>Highlight Color</Label>
+              <div className="flex flex-wrap gap-2">
+                {COLOR_OPTIONS.map((c) => (
+                  <button key={c.value} type="button" title={c.label}
+                    className={`w-8 h-8 rounded-full border-2 ${c.value === form.highlight_color ? "border-foreground ring-2 ring-offset-2" : "border-muted"} ${c.value || "bg-background"}`}
+                    style={c.value ? { backgroundColor: c.value } : {}}
+                    onClick={() => setForm({...form, highlight_color: c.value})}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
           <div className="flex justify-end gap-3 pt-4">
             <Button variant="outline" onClick={() => setAddDialogOpen(false)}>Cancel</Button>
