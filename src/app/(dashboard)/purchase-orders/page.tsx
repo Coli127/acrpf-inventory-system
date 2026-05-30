@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
@@ -326,7 +326,7 @@ export default function SalesOrdersPage() {
           </Table>
         </div>
         {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 px-4 py-3 border-t">
             <span className="text-sm text-muted-foreground">Page {page} of {totalPages} ({filtered.length} total)</span>
             <div className="flex gap-1">
               <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>Prev</Button>
@@ -338,34 +338,57 @@ export default function SalesOrdersPage() {
 
       {/* Create Order Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Create Sales Order</DialogTitle><DialogDescription>Select a customer and enter quantity</DialogDescription></DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2"><Label>Customer *</Label>
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <Select value={form.customer_id} onValueChange={(v) => setForm({ ...form, customer_id: v ?? "" })}>
-                    <SelectTrigger><SelectValue placeholder="Select customer" /></SelectTrigger>
-                    <SelectContent style={{ zIndex: 100 }}>{customers.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}</SelectContent>
-                  </Select>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Create Sales Order</DialogTitle>
+            <DialogDescription>Fill in the details below</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-5">
+            <div className="grid grid-cols-3 gap-4">
+              <div className="col-span-2 space-y-1.5">
+                <Label>Customer *</Label>
+                <div className="flex gap-2">
+                  <div className="flex-1 min-w-0">
+                    <Select value={form.customer_id} onValueChange={(v) => setForm({ ...form, customer_id: v ?? "" })}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select customer" className="truncate">{form.customer_id ? (customers.find((c) => c.id === form.customer_id)?.name || form.customer_id) : ""}</SelectValue>
+                      </SelectTrigger>
+                      <SelectContent style={{ zIndex: 100 }}>{customers.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}</SelectContent>
+                    </Select>
+                  </div>
+                  <Button variant="outline" size="icon" type="button" onClick={() => { setCustomerForm({ name: "", email: "", phone: "", address: "" }); setCustomerDialogOpen(true); }} className="shrink-0 h-8 w-8">
+                    <Plus className="h-4 w-4" />
+                  </Button>
                 </div>
-                <Button variant="outline" size="icon" type="button" onClick={() => { setCustomerForm({ name: "", email: "", phone: "", address: "" }); setCustomerDialogOpen(true); }} className="shrink-0">
-                  <Plus className="h-4 w-4" />
-                </Button>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Product</Label>
+                <Input value="Bricks" disabled className="bg-muted h-10" />
               </div>
             </div>
-            <div className="space-y-2"><Label>Product</Label><Input value="Bricks" disabled className="bg-muted" /></div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>Quantity</Label><Input type="number" min="1" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} /></div>
-              <div className="space-y-2"><Label>Price (each)</Label><Input type="number" min="0" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="₱0.00" /></div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-1.5">
+                <Label>Quantity</Label>
+                <Input type="number" min="1" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} className="h-10" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Unit Price</Label>
+                <Input type="number" min="0" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="₱0.00" className="h-10" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Total</Label>
+                <div className="h-10 px-3 flex items-center bg-muted rounded-md border font-semibold text-base">{formatCurrency(total)}</div>
+              </div>
             </div>
-            <div className="flex justify-between items-center pt-2 border-t font-bold"><span>Total:</span><span>{formatCurrency(total)}</span></div>
-            <div className="space-y-2"><Label>Notes</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Order notes" rows={2} /></div>
+            <div className="space-y-1.5">
+              <Label>Notes</Label>
+              <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Optional notes" rows={2} />
+            </div>
           </div>
-          <DialogFooter>
+          <div className="flex justify-end gap-3 pt-5">
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleSave} disabled={saving || !form.customer_id || !form.price || parseFloat(form.price) <= 0}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Create Order</Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -381,10 +404,10 @@ export default function SalesOrdersPage() {
             </div>
             <div className="space-y-2"><Label>Address</Label><Textarea value={customerForm.address} onChange={(e) => setCustomerForm({ ...customerForm, address: e.target.value })} placeholder="Full address" rows={2} /></div>
           </div>
-          <DialogFooter>
+          <div className="flex justify-end gap-3 pt-4">
             <Button variant="outline" onClick={() => setCustomerDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleAddCustomer} disabled={customerSaving || !customerForm.name}>{customerSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Create</Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 

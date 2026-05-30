@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Loader2, BookOpen, Plus, Pencil, Trash2, ChevronDown, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 
@@ -306,7 +306,7 @@ export default function JournalPage() {
                 </div>
               ))}
               {totalPages > 1 && (
-                <div className="flex items-center justify-between px-4 py-3 border-t bg-muted/30">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-2 px-4 py-3 border-t">
                   <span className="text-sm text-muted-foreground">Page {page} of {totalPages} ({entries.length} total)</span>
                   <div className="flex gap-1">
                     <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>Prev</Button>
@@ -341,13 +341,13 @@ export default function JournalPage() {
             <div className="space-y-2"><Label>Target Prepared Clay Mixture (kg)</Label><Input type="number" value={form.target_prepared_clay_mixture_kg} onChange={(e) => setForm({ ...form, target_prepared_clay_mixture_kg: e.target.value })} /></div>
             <div className="col-span-3 space-y-2"><Label>Remarks</Label><Textarea value={form.remarks} onChange={(e) => setForm({ ...form, remarks: e.target.value })} rows={2} /></div>
           </div>
-          <DialogFooter>
+          <div className="flex justify-end gap-3 pt-4">
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {editingEntry ? "Update" : "Add"} Entry
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

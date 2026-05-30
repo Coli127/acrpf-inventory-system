@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { Users, Plus, Search, MoreHorizontal, Pencil, Trash2, Loader2, AlertTriangle, Mail, Phone } from "lucide-react";
@@ -72,21 +72,21 @@ export default function SuppliersPage() {
 
       <Card><CardContent className="p-4"><div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Search customers..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 max-w-sm" /></div></CardContent></Card>
 
-      <Card><CardContent className="p-0"><Table><TableHeader><TableRow>
-        <TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Phone</TableHead><TableHead>Address</TableHead><TableHead>Created</TableHead><TableHead className="w-[50px]"></TableHead>
+      <Card><CardContent className="p-0"><div className="overflow-x-auto bg-white dark:bg-zinc-950"><Table><TableHeader><TableRow className="bg-muted/50">
+        <TableHead className="border border-border font-bold">Name</TableHead><TableHead className="border border-border font-bold">Email</TableHead><TableHead className="border border-border font-bold">Phone</TableHead><TableHead className="border border-border font-bold">Address</TableHead><TableHead className="border border-border font-bold">Created</TableHead><TableHead className="border border-border w-[50px]"></TableHead>
       </TableRow></TableHeader><TableBody>
         {loading ? (
-          <TableRow><TableCell colSpan={6} className="text-center h-32"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
+          <TableRow><TableCell colSpan={6} className="text-center h-32 border border-border"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
         ) : filtered.length === 0 ? (
-          <TableRow><TableCell colSpan={6} className="text-center h-32 text-muted-foreground">No customers found</TableCell></TableRow>
-        ) : filtered.map((s) => (
-          <TableRow key={s.id}>
-            <TableCell><div className="flex items-center gap-3"><div className="h-9 w-9 rounded-lg bg-gradient-to-br from-primary/10 to-chart-3/10 flex items-center justify-center"><Users className="h-4 w-4 text-primary" /></div><span className="font-medium">{s.name}</span></div></TableCell>
-            <TableCell className="text-sm">{s.email ? (<span className="flex items-center gap-1.5"><Mail className="h-3 w-3 text-muted-foreground" />{s.email}</span>) : "—"}</TableCell>
-            <TableCell className="text-sm">{s.phone ? (<span className="flex items-center gap-1.5"><Phone className="h-3 w-3 text-muted-foreground" />{s.phone}</span>) : "—"}</TableCell>
-            <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">{s.address || "—"}</TableCell>
-            <TableCell className="text-sm text-muted-foreground">{formatDate(s.created_at)}</TableCell>
-            <TableCell>
+          <TableRow><TableCell colSpan={6} className="text-center h-32 text-muted-foreground border border-border">No customers found</TableCell></TableRow>
+        ) : filtered.map((s, index) => (
+          <TableRow key={s.id} className={index % 2 === 0 ? "bg-background" : "bg-muted/30"}>
+            <TableCell className="border border-border"><div className="flex items-center gap-3"><div className="h-9 w-9 rounded-lg bg-gradient-to-br from-primary/10 to-chart-3/10 flex items-center justify-center"><Users className="h-4 w-4 text-primary" /></div><span className="font-medium">{s.name}</span></div></TableCell>
+            <TableCell className="text-sm border border-border">{s.email ? (<span className="flex items-center gap-1.5"><Mail className="h-3 w-3 text-muted-foreground" />{s.email}</span>) : "—"}</TableCell>
+            <TableCell className="text-sm border border-border">{s.phone ? (<span className="flex items-center gap-1.5"><Phone className="h-3 w-3 text-muted-foreground" />{s.phone}</span>) : "—"}</TableCell>
+            <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate border border-border">{s.address || "—"}</TableCell>
+            <TableCell className="text-sm text-muted-foreground border border-border">{formatDate(s.created_at)}</TableCell>
+            <TableCell className="border border-border">
               <DropdownMenu>
                 <DropdownMenuTrigger className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-accent"><MoreHorizontal className="h-4 w-4" /></DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -96,7 +96,7 @@ export default function SuppliersPage() {
               </DropdownMenu>
             </TableCell>
           </TableRow>
-        ))}</TableBody></Table></CardContent></Card>
+        ))}</TableBody></Table></div></CardContent></Card>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}><DialogContent>
         <DialogHeader><DialogTitle>{editing ? "Edit Supplier" : "Add Supplier"}</DialogTitle><DialogDescription>{editing ? "Update supplier details" : "Add a new supplier"}</DialogDescription></DialogHeader>
@@ -108,13 +108,13 @@ export default function SuppliersPage() {
           </div>
           <div className="space-y-2"><Label>Address</Label><Textarea value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Full address" rows={2} /></div>
         </div>
-        <DialogFooter><Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button><Button onClick={handleSave} disabled={saving}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{editing ? "Update" : "Create"}</Button></DialogFooter>
+        <div className="flex justify-end gap-3 pt-4"><Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button><Button onClick={handleSave} disabled={saving}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{editing ? "Update" : "Create"}</Button></div>
       </DialogContent></Dialog>
 
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}><DialogContent>
         <DialogHeader><DialogTitle className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-destructive" />Delete Supplier</DialogTitle>
         <DialogDescription>Are you sure you want to delete &quot;{deleting?.name}&quot;?</DialogDescription></DialogHeader>
-        <DialogFooter><Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>Cancel</Button><Button variant="destructive" onClick={handleDelete}>Delete</Button></DialogFooter>
+        <div className="flex justify-end gap-3 pt-4"><Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>Cancel</Button><Button variant="destructive" onClick={handleDelete}>Delete</Button></div>
       </DialogContent></Dialog>
     </div>
   );

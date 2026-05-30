@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
@@ -292,13 +292,13 @@ export default function ProductsPage() {
             </Select></div>
             <div className="col-span-2 space-y-2"><Label>Description</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} /></div>
           </div>
-          <DialogFooter>
+          <div className="flex justify-end gap-3 pt-4">
             <Button variant="outline" onClick={() => { setDialogOpen(false); resetForm(); }}>Cancel</Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {editingProduct ? "Update" : "Create"} Product
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -309,10 +309,10 @@ export default function ProductsPage() {
             <DialogTitle className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-destructive" />Delete Product</DialogTitle>
             <DialogDescription>Delete &quot;{deletingProduct?.name}&quot;? This action cannot be undone.</DialogDescription>
           </DialogHeader>
-          <DialogFooter>
+          <div className="flex justify-end gap-3 pt-4">
             <Button variant="outline" onClick={() => { setDeleteDialogOpen(false); setDeletingProduct(null); }}>Cancel</Button>
             <Button variant="destructive" onClick={handleDelete}>Delete</Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

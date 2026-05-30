@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Loader2, Package, Upload, ChevronDown, ChevronRight, Trash2, Plus, Pencil } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -253,8 +253,8 @@ export default function BricksPage() {
         </table>
       </div>
       {totalBrickPages > 1 && (
-        <div className="flex items-center justify-between px-4 py-2 border-t bg-muted/30">
-          <span className="text-xs text-muted-foreground">Page {currentPage} of {totalBrickPages}</span>
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 px-4 py-3 border-t">
+          <span className="text-sm text-muted-foreground">Page {currentPage} of {totalBrickPages}</span>
           <div className="flex gap-1">
             <Button variant="outline" size="sm" disabled={currentPage <= 1} onClick={() => setBrickPage({ ...brickPage, [year]: currentPage - 1 })}>Prev</Button>
             <Button variant="outline" size="sm" disabled={currentPage >= totalBrickPages} onClick={() => setBrickPage({ ...brickPage, [year]: currentPage + 1 })}>Next</Button>
@@ -341,10 +341,10 @@ export default function BricksPage() {
             <div className="space-y-2"><Label>Deficit</Label><Input type="number" value={form.deficit} onChange={(e) => setForm({...form, deficit: e.target.value})} /></div>
             <div className="col-span-3 space-y-2"><Label>Remarks</Label><Textarea value={form.remarks} onChange={(e) => setForm({...form, remarks: e.target.value})} rows={2} /></div>
           </div>
-          <DialogFooter>
+          <div className="flex justify-end gap-3 pt-4">
             <Button variant="outline" onClick={() => setAddDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleSave} disabled={saving}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{editingEntry ? "Update" : "Add"} Entry</Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { ArrowLeftRight, Plus, Search, Loader2, ArrowUpRight, ArrowDownRight, RefreshCw } from "lucide-react";
@@ -107,23 +107,23 @@ export default function StockMovementsPage() {
         </div>
       </CardContent></Card>
 
-      <Card><CardContent className="p-0"><Table><TableHeader><TableRow>
-        <TableHead>Product</TableHead><TableHead>Type</TableHead><TableHead className="text-right">Quantity</TableHead><TableHead>Reference</TableHead><TableHead>Notes</TableHead><TableHead>Date</TableHead>
+      <Card><CardContent className="p-0"><div className="overflow-x-auto bg-white dark:bg-zinc-950"><Table><TableHeader><TableRow className="bg-muted/50">
+        <TableHead className="border border-border font-bold">Product</TableHead><TableHead className="border border-border font-bold">Type</TableHead><TableHead className="border border-border font-bold text-right">Quantity</TableHead><TableHead className="border border-border font-bold">Reference</TableHead><TableHead className="border border-border font-bold">Notes</TableHead><TableHead className="border border-border font-bold">Date</TableHead>
       </TableRow></TableHeader><TableBody>
         {loading ? (
-          <TableRow><TableCell colSpan={6} className="text-center h-32"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
+          <TableRow><TableCell colSpan={6} className="text-center h-32 border border-border"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
         ) : filtered.length === 0 ? (
-          <TableRow><TableCell colSpan={6} className="text-center h-32 text-muted-foreground">No movements found</TableCell></TableRow>
-        ) : filtered.map((m) => (
-          <TableRow key={m.id}>
-            <TableCell><div><p className="font-medium text-sm">{m.product?.name || "Unknown"}</p><p className="text-xs text-muted-foreground font-mono">{m.product?.sku ?? ""}</p></div></TableCell>
-            <TableCell>{getTypeBadge(m.type)}</TableCell>
-            <TableCell className="text-right font-semibold">{m.type === "outbound" ? `-${m.quantity}` : `+${m.quantity}`}</TableCell>
-            <TableCell className="text-sm text-muted-foreground">{m.reference || "—"}</TableCell>
-            <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">{m.notes || "—"}</TableCell>
-            <TableCell className="text-sm text-muted-foreground">{formatRelativeTime(m.created_at)}</TableCell>
+          <TableRow><TableCell colSpan={6} className="text-center h-32 text-muted-foreground border border-border">No movements found</TableCell></TableRow>
+        ) : filtered.map((m, index) => (
+          <TableRow key={m.id} className={index % 2 === 0 ? "bg-background" : "bg-muted/30"}>
+            <TableCell className="border border-border"><div><p className="font-medium text-sm">{m.product?.name || "Unknown"}</p><p className="text-xs text-muted-foreground font-mono">{m.product?.sku ?? ""}</p></div></TableCell>
+            <TableCell className="border border-border">{getTypeBadge(m.type)}</TableCell>
+            <TableCell className="text-right font-semibold border border-border">{m.type === "outbound" ? `-${m.quantity}` : `+${m.quantity}`}</TableCell>
+            <TableCell className="text-sm text-muted-foreground border border-border">{m.reference || "—"}</TableCell>
+            <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate border border-border">{m.notes || "—"}</TableCell>
+            <TableCell className="text-sm text-muted-foreground border border-border">{formatRelativeTime(m.created_at)}</TableCell>
           </TableRow>
-        ))}</TableBody></Table></CardContent></Card>
+        ))}</TableBody></Table></div></CardContent></Card>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}><DialogContent>
         <DialogHeader><DialogTitle>Record Stock Movement</DialogTitle><DialogDescription>Record an inbound, outbound, or adjustment movement</DialogDescription></DialogHeader>
@@ -144,7 +144,7 @@ export default function StockMovementsPage() {
           <div className="space-y-2"><Label>Reference</Label><Input value={form.reference} onChange={(e) => setForm({ ...form, reference: e.target.value })} placeholder="PO number, delivery note, etc." /></div>
           <div className="space-y-2"><Label>Notes</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Additional notes" rows={2} /></div>
         </div>
-        <DialogFooter><Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button><Button onClick={handleSave} disabled={saving}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Record Movement</Button></DialogFooter>
+        <div className="flex justify-end gap-3 pt-4"><Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button><Button onClick={handleSave} disabled={saving}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Record Movement</Button></div>
       </DialogContent></Dialog>
     </div>
   );

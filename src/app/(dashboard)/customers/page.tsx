@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { Users, Plus, Search, MoreHorizontal, Pencil, Trash2, Loader2, AlertTriangle, Mail, Phone, Building2, FileText, Clock, CheckCircle, XCircle } from "lucide-react";
@@ -118,21 +118,21 @@ export default function CustomersPage() {
 
       <Card><CardContent className="p-4"><div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Search customers..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 max-w-sm" /></div></CardContent></Card>
 
-      <Card><CardContent className="p-0"><div className="overflow-x-auto"><Table><TableHeader><TableRow>
-        <TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Phone</TableHead><TableHead>Address</TableHead><TableHead>Created</TableHead><TableHead className="w-[50px]"></TableHead>
+      <Card><CardContent className="p-0"><div className="overflow-x-auto bg-white dark:bg-zinc-950"><Table><TableHeader><TableRow className="bg-muted/50">
+        <TableHead className="border border-border font-bold">Name</TableHead><TableHead className="border border-border font-bold">Email</TableHead><TableHead className="border border-border font-bold">Phone</TableHead><TableHead className="border border-border font-bold">Address</TableHead><TableHead className="border border-border font-bold">Created</TableHead><TableHead className="border border-border w-[50px]"></TableHead>
       </TableRow></TableHeader><TableBody>
         {loading ? (
-          <TableRow><TableCell colSpan={6} className="text-center h-32"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
+          <TableRow><TableCell colSpan={6} className="text-center h-32 border border-border"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
         ) : paginated.length === 0 ? (
-          <TableRow><TableCell colSpan={6} className="text-center h-32 text-muted-foreground">No customers found</TableCell></TableRow>
-        ) : paginated.map((c) => (
-          <TableRow key={c.id}>
-            <TableCell><div className="flex items-center gap-3 cursor-pointer" onClick={() => viewOrders(c)}><div className="h-9 w-9 rounded-lg bg-gradient-to-br from-primary/10 to-chart-3/10 flex items-center justify-center"><Building2 className="h-4 w-4 text-primary" /></div><span className="font-medium hover:underline">{c.name}</span></div></TableCell>
-            <TableCell className="text-sm">{c.email ? (<span className="flex items-center gap-1.5"><Mail className="h-3 w-3 text-muted-foreground" />{c.email}</span>) : "—"}</TableCell>
-            <TableCell className="text-sm">{c.phone ? (<span className="flex items-center gap-1.5"><Phone className="h-3 w-3 text-muted-foreground" />{c.phone}</span>) : "—"}</TableCell>
-            <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">{c.address || "—"}</TableCell>
-            <TableCell className="text-sm text-muted-foreground">{formatDate(c.created_at)}</TableCell>
-            <TableCell>
+          <TableRow><TableCell colSpan={6} className="text-center h-32 text-muted-foreground border border-border">No customers found</TableCell></TableRow>
+        ) : paginated.map((c, index) => (
+          <TableRow key={c.id} className={index % 2 === 0 ? "bg-background" : "bg-muted/30"}>
+            <TableCell className="border border-border"><div className="flex items-center gap-3 cursor-pointer" onClick={() => viewOrders(c)}><div className="h-9 w-9 rounded-lg bg-gradient-to-br from-primary/10 to-chart-3/10 flex items-center justify-center"><Building2 className="h-4 w-4 text-primary" /></div><span className="font-medium hover:underline">{c.name}</span></div></TableCell>
+            <TableCell className="text-sm border border-border">{c.email ? (<span className="flex items-center gap-1.5"><Mail className="h-3 w-3 text-muted-foreground" />{c.email}</span>) : "—"}</TableCell>
+            <TableCell className="text-sm border border-border">{c.phone ? (<span className="flex items-center gap-1.5"><Phone className="h-3 w-3 text-muted-foreground" />{c.phone}</span>) : "—"}</TableCell>
+            <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate border border-border">{c.address || "—"}</TableCell>
+            <TableCell className="text-sm text-muted-foreground border border-border">{formatDate(c.created_at)}</TableCell>
+            <TableCell className="border border-border">
               <DropdownMenu>
                 <DropdownMenuTrigger className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-accent"><MoreHorizontal className="h-4 w-4" /></DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -144,7 +144,7 @@ export default function CustomersPage() {
           </TableRow>
         ))}</TableBody></Table></div>
           {totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-2 px-4 py-3 border-t">
               <span className="text-sm text-muted-foreground">Page {page} of {totalPages} ({filtered.length} total)</span>
               <div className="flex gap-1">
                 <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>Prev</Button>
@@ -164,7 +164,7 @@ export default function CustomersPage() {
           </div>
           <div className="space-y-2"><Label>Address</Label><Textarea value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Full address" rows={2} /></div>
         </div>
-        <DialogFooter><Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button><Button onClick={handleSave} disabled={saving}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{editing ? "Update" : "Create"}</Button></DialogFooter>
+        <div className="flex justify-end gap-3 pt-4"><Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button><Button onClick={handleSave} disabled={saving}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{editing ? "Update" : "Create"}</Button></div>
       </DialogContent></Dialog>
 
       <Dialog open={ordersOpen} onOpenChange={setOrdersOpen}><DialogContent className="max-w-lg">
@@ -199,7 +199,7 @@ export default function CustomersPage() {
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}><DialogContent>
         <DialogHeader><DialogTitle className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-destructive" />Delete Customer</DialogTitle>
         <DialogDescription>Are you sure you want to delete &quot;{deleting?.name}&quot;?</DialogDescription></DialogHeader>
-        <DialogFooter><Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>Cancel</Button><Button variant="destructive" onClick={handleDelete}>Delete</Button></DialogFooter>
+        <div className="flex justify-end gap-3 pt-4"><Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>Cancel</Button><Button variant="destructive" onClick={handleDelete}>Delete</Button></div>
       </DialogContent></Dialog>
     </div>
   );

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -462,26 +462,25 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <DialogFooter className="flex-row gap-2 sm:justify-center">
+          <div className="flex justify-end gap-3 pt-4">
             <Button
               variant="outline"
               onClick={() => setConfirmOpen(false)}
               disabled={saving}
-              className="flex-1 sm:flex-none"
             >
               Cancel
             </Button>
             <Button
               onClick={handleUpdateProfile}
               disabled={saving}
-              className="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
             >
               {saving ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : null}
               {saving ? "Saving..." : "Confirm"}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </TooltipProvider>
